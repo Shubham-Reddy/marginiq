@@ -1,0 +1,1626 @@
+<title>MarginIQ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single-column working tool. Load data, check menu and fees, read the verdict, act on the table. */
+:root{
+ --bg:#f6f7f8; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#6f6d68; --grid:#e1e0d9; --axis:#c3c2b7;
+ --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#4a3aa7;
+ --good:#006300; --good-bg:#e3f2e3; --warn:#8a5a00; --warn-bg:#fdf0d0; --crit:#b42323; --crit-bg:#fbe3e3;
+ --accent:#184f95; --line:#e1e0d9; --field:#fff;
+ --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+ --bg:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#a09e96; --grid:#2c2c2a; --axis:#383835;
+ --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#9085e9;
+ --good:#5fd35f; --good-bg:#16311a; --warn:#f0b73a; --warn-bg:#3a2d0c; --crit:#f08080; --crit-bg:#3d1717; --accent:#86b6ef; --line:#2c2c2a; --field:#101010; color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#a09e96; --grid:#2c2c2a; --axis:#383835;
+ --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#9085e9;
+ --good:#5fd35f; --good-bg:#16311a; --warn:#f0b73a; --warn-bg:#3a2d0c; --crit:#f08080; --crit-bg:#3d1717; --accent:#86b6ef; --line:#2c2c2a; --field:#101010; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:28px 56px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,6vw,46px);line-height:1.05;letter-spacing:-.02em}
+h2{font-size:21px;letter-spacing:-.01em}
+h3{font-size:16px}
+p{margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:10px}
+.sub{color:var(--ink2);max-width:62ch;font-size:16px}
+.tag{align-self:flex-start;font:500 12px var(--mono);letter-spacing:.04em;color:var(--ink2);border:1px solid var(--line);padding:4px 10px;border-radius:99px;background:var(--surface)}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.v{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.v .k{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.v .n{font:700 34px/1.1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.v .d{color:var(--ink2);font-size:13.5px}
+.v.hi{border-color:var(--accent)}
+section{display:flex;flex-direction:column;gap:12px;min-width:0}
+.lede{color:var(--ink2);max-width:68ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+#c1,#c2{overflow-x:auto}
+svg{display:block;width:100%;min-width:620px;height:auto;overflow:visible}
+svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+svg .lab{fill:var(--ink2)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px/1.4 var(--mono);padding:6px 9px;border-radius:6px;z-index:9;white-space:nowrap;display:none}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px 28px}
+.ctl label{display:flex;justify-content:space-between;font-size:13.5px;color:var(--ink2);margin-bottom:4px}
+.ctl output{font:500 13.5px var(--mono);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.num,th.num{text-align:right}
+td input[type=text],td input[type=number]{font:14px var(--body);background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;width:100%;min-width:70px}
+td input[type=number]{font-family:var(--mono);text-align:right;max-width:110px}
+textarea{width:100%;min-height:120px;font:12.5px/1.5 var(--mono);background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.pill{display:inline-flex;gap:5px;align-items:center;font:600 11.5px var(--mono);letter-spacing:.04em;padding:2px 9px;border-radius:99px}
+.KEEP{background:var(--good-bg);color:var(--good)} .REPRICE{background:var(--warn-bg);color:var(--warn)} .PULL{background:var(--crit-bg);color:var(--crit)}
+.total{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline}
+.total b{font:700 28px var(--display);font-variant-numeric:tabular-nums}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+button,.btn{font:500 12.5px var(--mono);border:1px solid var(--line);background:var(--surface);color:var(--ink2);padding:6px 13px;border-radius:99px;cursor:pointer;display:inline-block}
+button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.primary,.btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+button.x{padding:3px 9px}
+button:focus-visible,input:focus-visible,summary:focus-visible,textarea:focus-visible,.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
+.note{font-size:13px;color:var(--muted);max-width:72ch}
+.status{font-size:14px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.status.bad{border-color:var(--crit);color:var(--crit)}
+details summary{cursor:pointer;font:500 12.5px var(--mono);color:var(--ink2)}
+pre{margin:8px 0 0;font:12px/1.5 var(--mono);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+#results{width:100%;min-width:0;margin:0}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;max-width:76ch}
+</style>
+
+<div class="wrap">
+<header>
+ <span class="tag" id="srctag"></span>
+ <h1>MarginIQ</h1>
+ <p class="sub">A flat white sells for the same price everywhere. What the café keeps does not. Load your sales and MarginIQ shows which items lose money on which delivery app, and what to do about each one.</p>
+</header>
+
+<section>
+ <h2>Your data</h2>
+ <div class="card stack">
+  <div class="row">
+   <button id="useSample" class="primary">Use the sample café</button>
+   <label class="btn" for="file">Upload a sales CSV<input id="file" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain"></label>
+   <span class="note">Everything runs in your browser. Nothing is uploaded or stored.</span>
+  </div>
+  <details>
+   <summary>Paste sales instead, or see the format</summary>
+   <div class="stack" style="margin-top:10px">
+    <p class="note">One row per sale, with a header row. Columns can be in any order and are matched by name: item, channel, quantity (or qty), and a date or timestamp (sold_at, date, time). Dates can be 2026-09-14 or 14/09/2026.</p>
+    <pre>item,channel,quantity,sold_at
+Flat White,Dine-in,2,2026-09-14 08:15:00
+Caesar Salad,Uber Eats,1,14/09/2026 12:40</pre>
+    <textarea id="paste" aria-label="Paste sales CSV" placeholder="Paste your CSV here"></textarea>
+    <div class="row"><button id="runPaste">Analyse pasted data</button></div>
+   </div>
+  </details>
+  <div id="status" class="status" role="status"></div>
+  <div id="rejects"></div>
+ </div>
+</section>
+
+<section>
+ <h2>Your menu and fees</h2>
+ <p class="lede">These drive every figure below. Replace the sample numbers with yours. Packaging is charged on delivery orders only. A channel with 0% commission is treated as dine-in or pickup.</p>
+ <div class="card stack">
+  <div class="tablewrap"><table id="menuT"></table></div>
+  <div class="row"><button id="addItem">+ Add item</button></div>
+  <div class="tablewrap"><table id="chT" style="min-width:420px"></table></div>
+  <div class="row"><button id="addCh">+ Add channel</button></div>
+ </div>
+</section>
+
+<div id="results" class="wrap" style="gap:28px"></div>
+
+<footer>MarginIQ calculates profit per sale as price times quantity, less commission, ingredient cost and (for delivery) packaging. It then subtracts an overhead assumption and applies a rule to each item and channel. The same logic runs as a PostgreSQL function in the project's SQL model. The sample café is synthetic data built to mimic a Melbourne café, so its results show how the method works, not a real business.</footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const SAMPLE_CSV = `item,channel,quantity,sold_at
+Flat White,Dine-in,3,2026-08-24 07:18:53
+Caesar Salad,Dine-in,1,2026-08-24 07:40:10
+Bacon & Egg Roll,Dine-in,1,2026-08-24 07:58:36
+Bacon & Egg Roll,Dine-in,1,2026-08-24 08:04:02
+Banana Bread,Dine-in,1,2026-08-24 08:08:32
+Bacon & Egg Roll,Dine-in,2,2026-08-24 08:10:50
+Avocado Toast,Dine-in,2,2026-08-24 08:22:13
+Caesar Salad,DoorDash,1,2026-08-24 08:48:21
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-24 09:02:46
+Bacon & Egg Roll,Dine-in,2,2026-08-24 09:18:27
+Flat White,Dine-in,1,2026-08-24 09:59:40
+Avocado Toast,Dine-in,1,2026-08-24 10:53:51
+Flat White,Dine-in,1,2026-08-24 10:58:41
+Flat White,Uber Eats,1,2026-08-24 11:01:35
+Flat White,Dine-in,1,2026-08-24 11:16:47
+Chicken Schnitzel Burger,DoorDash,1,2026-08-24 11:51:55
+Flat White,Dine-in,1,2026-08-24 12:03:14
+Chicken Schnitzel Burger,Dine-in,3,2026-08-24 12:07:43
+Flat White,Dine-in,2,2026-08-24 12:08:42
+Chicken Schnitzel Burger,Dine-in,1,2026-08-24 12:29:33
+Flat White,Dine-in,2,2026-08-24 12:57:34
+Chicken Schnitzel Burger,Dine-in,1,2026-08-24 13:27:13
+Flat White,Dine-in,1,2026-08-24 13:32:38
+Bacon & Egg Roll,Dine-in,3,2026-08-24 13:55:06
+Flat White,Dine-in,2,2026-08-24 14:05:46
+Avocado Toast,Uber Eats,3,2026-08-24 14:58:00
+Caesar Salad,Uber Eats,2,2026-08-24 15:48:11
+Chicken Schnitzel Burger,Dine-in,1,2026-08-25 07:05:26
+Avocado Toast,Uber Eats,1,2026-08-25 07:24:00
+Chicken Schnitzel Burger,Dine-in,1,2026-08-25 08:04:45
+Bacon & Egg Roll,Dine-in,2,2026-08-25 08:06:42
+Avocado Toast,Dine-in,1,2026-08-25 08:14:04
+Chicken Schnitzel Burger,DoorDash,2,2026-08-25 08:32:05
+Flat White,Dine-in,1,2026-08-25 08:35:09
+Chicken Schnitzel Burger,Dine-in,2,2026-08-25 08:40:54
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-25 09:15:55
+Flat White,Dine-in,2,2026-08-25 09:42:06
+Chicken Schnitzel Burger,Dine-in,1,2026-08-25 09:42:45
+Flat White,Dine-in,1,2026-08-25 09:55:06
+Avocado Toast,Dine-in,2,2026-08-25 11:03:41
+Flat White,Dine-in,2,2026-08-25 11:27:44
+Banana Bread,Dine-in,1,2026-08-25 11:47:20
+Banana Bread,Dine-in,1,2026-08-25 12:09:12
+Bacon & Egg Roll,Dine-in,1,2026-08-25 12:25:42
+Flat White,Dine-in,1,2026-08-25 12:29:20
+Banana Bread,Dine-in,1,2026-08-25 12:36:06
+Flat White,Dine-in,2,2026-08-25 12:39:51
+Avocado Toast,Dine-in,1,2026-08-25 12:43:41
+Flat White,Dine-in,2,2026-08-25 13:04:32
+Avocado Toast,Dine-in,2,2026-08-25 13:05:40
+Flat White,Dine-in,1,2026-08-25 13:25:07
+Chicken Schnitzel Burger,Uber Eats,3,2026-08-25 13:56:15
+Avocado Toast,DoorDash,1,2026-08-25 14:36:36
+Bacon & Egg Roll,Dine-in,3,2026-08-25 14:54:15
+Caesar Salad,Uber Eats,1,2026-08-26 07:30:39
+Bacon & Egg Roll,Dine-in,1,2026-08-26 08:08:02
+Bacon & Egg Roll,Dine-in,2,2026-08-26 08:42:12
+Bacon & Egg Roll,Dine-in,1,2026-08-26 08:44:06
+Banana Bread,Dine-in,1,2026-08-26 08:51:51
+Flat White,Dine-in,1,2026-08-26 08:58:29
+Caesar Salad,Dine-in,2,2026-08-26 09:01:07
+Flat White,Dine-in,1,2026-08-26 09:20:42
+Caesar Salad,Dine-in,1,2026-08-26 09:26:20
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-26 09:52:48
+Flat White,Dine-in,1,2026-08-26 10:24:43
+Flat White,Dine-in,2,2026-08-26 10:32:07
+Flat White,Dine-in,1,2026-08-26 10:53:00
+Chicken Schnitzel Burger,Dine-in,1,2026-08-26 12:00:33
+Flat White,Dine-in,1,2026-08-26 12:12:45
+Flat White,Dine-in,2,2026-08-26 12:20:29
+Flat White,Dine-in,1,2026-08-26 12:22:41
+Caesar Salad,DoorDash,1,2026-08-26 12:35:45
+Chicken Schnitzel Burger,Dine-in,2,2026-08-26 12:42:12
+Avocado Toast,Uber Eats,2,2026-08-26 13:26:39
+Avocado Toast,Uber Eats,3,2026-08-26 13:26:51
+Caesar Salad,Dine-in,1,2026-08-26 13:50:47
+Flat White,Dine-in,1,2026-08-26 13:57:09
+Banana Bread,Dine-in,2,2026-08-26 13:57:22
+Flat White,Dine-in,1,2026-08-26 15:02:06
+Banana Bread,DoorDash,1,2026-08-27 07:19:36
+Flat White,Dine-in,1,2026-08-27 08:20:21
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-27 08:26:24
+Flat White,Dine-in,1,2026-08-27 08:39:34
+Flat White,Dine-in,1,2026-08-27 09:20:57
+Chicken Schnitzel Burger,Uber Eats,3,2026-08-27 09:41:04
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-27 09:43:51
+Avocado Toast,Dine-in,1,2026-08-27 09:54:07
+Flat White,Dine-in,1,2026-08-27 09:54:26
+Bacon & Egg Roll,Dine-in,1,2026-08-27 10:11:51
+Avocado Toast,Uber Eats,1,2026-08-27 11:13:29
+Avocado Toast,Dine-in,2,2026-08-27 11:38:57
+Caesar Salad,Uber Eats,2,2026-08-27 11:40:15
+Avocado Toast,Dine-in,1,2026-08-27 12:00:57
+Banana Bread,Dine-in,1,2026-08-27 12:04:37
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-27 12:08:55
+Chicken Schnitzel Burger,Dine-in,2,2026-08-27 12:30:28
+Banana Bread,Dine-in,1,2026-08-27 12:32:27
+Flat White,Dine-in,1,2026-08-27 12:45:13
+Bacon & Egg Roll,Dine-in,1,2026-08-27 12:47:45
+Flat White,Dine-in,3,2026-08-27 12:53:29
+Chicken Schnitzel Burger,Dine-in,1,2026-08-27 12:54:43
+Flat White,Dine-in,1,2026-08-27 12:54:57
+Flat White,Dine-in,2,2026-08-27 13:16:53
+Flat White,Dine-in,3,2026-08-27 13:22:34
+Chicken Schnitzel Burger,Dine-in,1,2026-08-27 13:48:36
+Caesar Salad,Dine-in,2,2026-08-27 14:12:53
+Avocado Toast,Dine-in,2,2026-08-27 14:17:39
+Bacon & Egg Roll,Dine-in,1,2026-08-27 15:38:20
+Bacon & Egg Roll,Dine-in,1,2026-08-28 07:18:30
+Flat White,Dine-in,1,2026-08-28 08:11:19
+Avocado Toast,Uber Eats,1,2026-08-28 09:09:04
+Flat White,Dine-in,2,2026-08-28 09:29:36
+Flat White,Dine-in,1,2026-08-28 09:34:31
+Banana Bread,Dine-in,1,2026-08-28 09:35:48
+Avocado Toast,Dine-in,2,2026-08-28 09:54:15
+Flat White,Dine-in,1,2026-08-28 09:55:29
+Flat White,Dine-in,3,2026-08-28 09:55:30
+Flat White,Dine-in,1,2026-08-28 10:36:39
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-28 10:44:38
+Caesar Salad,Uber Eats,2,2026-08-28 11:01:48
+Chicken Schnitzel Burger,DoorDash,1,2026-08-28 11:33:22
+Banana Bread,Dine-in,1,2026-08-28 11:40:52
+Chicken Schnitzel Burger,DoorDash,3,2026-08-28 11:44:08
+Avocado Toast,Menulog,2,2026-08-28 11:48:15
+Avocado Toast,Uber Eats,1,2026-08-28 11:48:44
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-28 12:09:09
+Avocado Toast,Menulog,2,2026-08-28 12:16:42
+Bacon & Egg Roll,Dine-in,1,2026-08-28 12:17:19
+Chicken Schnitzel Burger,DoorDash,2,2026-08-28 12:17:35
+Chicken Schnitzel Burger,Dine-in,1,2026-08-28 12:24:28
+Flat White,Dine-in,1,2026-08-28 12:30:33
+Chicken Schnitzel Burger,Dine-in,2,2026-08-28 12:38:16
+Chicken Schnitzel Burger,Uber Eats,2,2026-08-28 12:51:59
+Caesar Salad,Dine-in,1,2026-08-28 13:05:18
+Flat White,Dine-in,1,2026-08-28 13:11:31
+Chicken Schnitzel Burger,DoorDash,2,2026-08-28 14:28:07
+Chicken Schnitzel Burger,Uber Eats,2,2026-08-28 15:33:38
+Caesar Salad,Dine-in,2,2026-08-29 07:50:03
+Flat White,Dine-in,1,2026-08-29 07:53:42
+Banana Bread,Dine-in,2,2026-08-29 08:24:36
+Bacon & Egg Roll,DoorDash,1,2026-08-29 08:28:22
+Flat White,Dine-in,1,2026-08-29 09:07:49
+Chicken Schnitzel Burger,Dine-in,1,2026-08-29 09:12:44
+Avocado Toast,Menulog,1,2026-08-29 09:16:42
+Flat White,Dine-in,1,2026-08-29 09:25:52
+Bacon & Egg Roll,Uber Eats,1,2026-08-29 09:30:45
+Bacon & Egg Roll,Dine-in,1,2026-08-29 09:37:37
+Flat White,Dine-in,1,2026-08-29 09:42:06
+Avocado Toast,Dine-in,1,2026-08-29 09:43:54
+Avocado Toast,Dine-in,2,2026-08-29 09:51:14
+Flat White,Dine-in,2,2026-08-29 10:59:50
+Caesar Salad,Dine-in,1,2026-08-29 11:16:21
+Avocado Toast,Dine-in,1,2026-08-29 11:22:21
+Flat White,Dine-in,1,2026-08-29 11:36:43
+Flat White,Dine-in,2,2026-08-29 11:45:18
+Avocado Toast,Dine-in,1,2026-08-29 11:46:09
+Avocado Toast,Dine-in,3,2026-08-29 11:56:08
+Flat White,Dine-in,2,2026-08-29 12:03:58
+Flat White,Dine-in,3,2026-08-29 12:15:45
+Chicken Schnitzel Burger,Dine-in,1,2026-08-29 12:18:14
+Flat White,Dine-in,3,2026-08-29 12:29:54
+Avocado Toast,Dine-in,3,2026-08-29 12:34:29
+Flat White,Dine-in,1,2026-08-29 12:40:28
+Flat White,Dine-in,1,2026-08-29 12:43:48
+Flat White,Dine-in,1,2026-08-29 12:55:06
+Avocado Toast,Dine-in,1,2026-08-29 12:55:06
+Banana Bread,Dine-in,1,2026-08-29 13:31:55
+Flat White,Dine-in,1,2026-08-29 13:39:43
+Avocado Toast,Dine-in,3,2026-08-29 13:41:09
+Flat White,Dine-in,1,2026-08-29 14:28:56
+Flat White,Dine-in,2,2026-08-29 15:15:29
+Chicken Schnitzel Burger,DoorDash,1,2026-08-29 15:58:07
+Caesar Salad,Dine-in,1,2026-08-30 07:02:19
+Avocado Toast,Dine-in,3,2026-08-30 07:30:54
+Flat White,Dine-in,2,2026-08-30 07:34:07
+Flat White,Dine-in,1,2026-08-30 07:56:35
+Flat White,Dine-in,2,2026-08-30 08:13:52
+Chicken Schnitzel Burger,Dine-in,2,2026-08-30 08:18:20
+Flat White,Dine-in,1,2026-08-30 08:28:15
+Caesar Salad,Uber Eats,1,2026-08-30 08:59:30
+Chicken Schnitzel Burger,Dine-in,1,2026-08-30 09:07:26
+Banana Bread,DoorDash,1,2026-08-30 09:08:50
+Flat White,Dine-in,1,2026-08-30 09:11:07
+Bacon & Egg Roll,Dine-in,2,2026-08-30 11:04:09
+Avocado Toast,Dine-in,2,2026-08-30 11:06:28
+Chicken Schnitzel Burger,Dine-in,1,2026-08-30 11:13:09
+Flat White,Dine-in,1,2026-08-30 11:23:33
+Flat White,Dine-in,1,2026-08-30 11:24:29
+Avocado Toast,Uber Eats,1,2026-08-30 11:26:46
+Banana Bread,Dine-in,1,2026-08-30 11:37:47
+Banana Bread,Dine-in,1,2026-08-30 11:38:27
+Flat White,Dine-in,1,2026-08-30 11:41:22
+Caesar Salad,Dine-in,1,2026-08-30 11:52:40
+Chicken Schnitzel Burger,Dine-in,2,2026-08-30 12:19:50
+Flat White,Dine-in,1,2026-08-30 12:25:54
+Chicken Schnitzel Burger,Dine-in,1,2026-08-30 12:29:58
+Flat White,Dine-in,1,2026-08-30 12:33:07
+Avocado Toast,DoorDash,1,2026-08-30 12:35:45
+Bacon & Egg Roll,DoorDash,1,2026-08-30 12:46:55
+Avocado Toast,DoorDash,1,2026-08-30 12:51:08
+Flat White,Dine-in,1,2026-08-30 13:00:17
+Banana Bread,Uber Eats,3,2026-08-30 13:05:42
+Flat White,Dine-in,1,2026-08-30 13:15:37
+Flat White,Dine-in,1,2026-08-30 13:23:07
+Bacon & Egg Roll,Dine-in,1,2026-08-30 13:39:26
+Caesar Salad,Dine-in,2,2026-08-30 13:46:03
+Chicken Schnitzel Burger,Dine-in,2,2026-08-30 13:49:52
+Banana Bread,Dine-in,1,2026-08-30 13:55:42
+Caesar Salad,Dine-in,1,2026-08-30 14:04:57
+Flat White,Dine-in,1,2026-08-30 14:30:51
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-31 07:32:04
+Flat White,Dine-in,1,2026-08-31 08:32:40
+Flat White,Dine-in,1,2026-08-31 08:38:09
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-31 09:13:49
+Flat White,Dine-in,1,2026-08-31 09:36:38
+Avocado Toast,Dine-in,1,2026-08-31 09:48:32
+Chicken Schnitzel Burger,Dine-in,2,2026-08-31 10:07:25
+Banana Bread,Dine-in,1,2026-08-31 11:24:26
+Avocado Toast,DoorDash,1,2026-08-31 11:25:55
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-31 11:42:19
+Flat White,Dine-in,1,2026-08-31 12:04:09
+Chicken Schnitzel Burger,Dine-in,2,2026-08-31 12:09:28
+Chicken Schnitzel Burger,Uber Eats,1,2026-08-31 12:11:08
+Avocado Toast,Uber Eats,1,2026-08-31 12:17:28
+Caesar Salad,Dine-in,1,2026-08-31 12:31:29
+Caesar Salad,Dine-in,1,2026-08-31 12:42:53
+Bacon & Egg Roll,DoorDash,1,2026-08-31 12:52:41
+Flat White,Dine-in,1,2026-08-31 12:58:21
+Caesar Salad,Dine-in,1,2026-08-31 13:51:22
+Caesar Salad,Uber Eats,1,2026-08-31 13:58:23
+Bacon & Egg Roll,Dine-in,1,2026-08-31 14:36:41
+Flat White,Menulog,1,2026-08-31 14:55:20
+Bacon & Egg Roll,DoorDash,2,2026-09-01 07:21:56
+Flat White,Dine-in,1,2026-09-01 07:54:50
+Flat White,Dine-in,1,2026-09-01 08:22:19
+Flat White,Dine-in,2,2026-09-01 08:27:05
+Banana Bread,Dine-in,2,2026-09-01 08:42:27
+Caesar Salad,Dine-in,1,2026-09-01 08:44:53
+Flat White,Dine-in,1,2026-09-01 08:53:44
+Flat White,Dine-in,1,2026-09-01 09:01:26
+Flat White,Dine-in,1,2026-09-01 09:26:49
+Bacon & Egg Roll,Dine-in,1,2026-09-01 09:30:32
+Avocado Toast,Uber Eats,2,2026-09-01 09:45:05
+Flat White,Dine-in,1,2026-09-01 09:47:50
+Avocado Toast,DoorDash,3,2026-09-01 10:01:20
+Bacon & Egg Roll,Dine-in,1,2026-09-01 10:26:23
+Flat White,Dine-in,1,2026-09-01 10:28:33
+Chicken Schnitzel Burger,Dine-in,2,2026-09-01 12:04:21
+Caesar Salad,Dine-in,1,2026-09-01 12:05:19
+Flat White,Dine-in,1,2026-09-01 12:55:23
+Chicken Schnitzel Burger,DoorDash,2,2026-09-01 12:58:38
+Flat White,Dine-in,2,2026-09-01 13:18:05
+Chicken Schnitzel Burger,Dine-in,1,2026-09-01 13:30:57
+Avocado Toast,DoorDash,2,2026-09-01 13:39:38
+Avocado Toast,Dine-in,1,2026-09-01 13:57:02
+Flat White,Dine-in,1,2026-09-01 14:21:49
+Avocado Toast,Dine-in,1,2026-09-01 14:52:12
+Flat White,Dine-in,3,2026-09-01 15:29:49
+Flat White,Dine-in,1,2026-09-02 07:11:57
+Caesar Salad,Uber Eats,3,2026-09-02 07:12:02
+Bacon & Egg Roll,Dine-in,1,2026-09-02 08:18:15
+Avocado Toast,Dine-in,3,2026-09-02 08:18:20
+Flat White,Dine-in,2,2026-09-02 08:22:55
+Bacon & Egg Roll,Dine-in,1,2026-09-02 08:23:27
+Caesar Salad,Dine-in,3,2026-09-02 08:38:43
+Bacon & Egg Roll,Dine-in,1,2026-09-02 08:45:30
+Flat White,Dine-in,2,2026-09-02 09:05:46
+Bacon & Egg Roll,Dine-in,1,2026-09-02 09:21:52
+Bacon & Egg Roll,Dine-in,1,2026-09-02 09:25:52
+Flat White,Dine-in,1,2026-09-02 09:53:09
+Bacon & Egg Roll,Dine-in,2,2026-09-02 10:11:31
+Flat White,Dine-in,1,2026-09-02 10:20:41
+Caesar Salad,Uber Eats,1,2026-09-02 10:42:42
+Flat White,Menulog,1,2026-09-02 10:47:01
+Chicken Schnitzel Burger,Menulog,1,2026-09-02 11:15:45
+Avocado Toast,Menulog,1,2026-09-02 11:32:35
+Flat White,Menulog,1,2026-09-02 11:58:35
+Flat White,Dine-in,1,2026-09-02 12:06:49
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-02 12:10:44
+Flat White,Dine-in,1,2026-09-02 12:23:23
+Chicken Schnitzel Burger,Dine-in,1,2026-09-02 12:23:23
+Banana Bread,Menulog,1,2026-09-02 12:23:32
+Caesar Salad,DoorDash,1,2026-09-02 12:44:58
+Bacon & Egg Roll,Dine-in,1,2026-09-02 13:08:02
+Flat White,Dine-in,1,2026-09-02 13:29:04
+Banana Bread,Dine-in,1,2026-09-02 13:32:14
+Flat White,Dine-in,1,2026-09-02 13:54:10
+Banana Bread,Dine-in,2,2026-09-02 14:20:42
+Avocado Toast,Dine-in,2,2026-09-02 14:39:27
+Bacon & Egg Roll,Dine-in,1,2026-09-02 15:30:40
+Chicken Schnitzel Burger,Menulog,1,2026-09-03 07:12:40
+Chicken Schnitzel Burger,DoorDash,1,2026-09-03 07:45:21
+Flat White,Dine-in,3,2026-09-03 07:55:01
+Avocado Toast,Dine-in,1,2026-09-03 08:20:41
+Avocado Toast,Dine-in,1,2026-09-03 08:35:18
+Caesar Salad,Menulog,1,2026-09-03 08:36:26
+Chicken Schnitzel Burger,Dine-in,1,2026-09-03 08:39:46
+Avocado Toast,Dine-in,1,2026-09-03 08:59:45
+Banana Bread,Dine-in,1,2026-09-03 09:03:18
+Bacon & Egg Roll,Dine-in,1,2026-09-03 09:04:44
+Chicken Schnitzel Burger,Menulog,2,2026-09-03 09:23:48
+Flat White,DoorDash,1,2026-09-03 10:51:35
+Chicken Schnitzel Burger,Menulog,2,2026-09-03 11:05:25
+Chicken Schnitzel Burger,Dine-in,1,2026-09-03 11:17:28
+Bacon & Egg Roll,Dine-in,1,2026-09-03 11:34:00
+Avocado Toast,Dine-in,1,2026-09-03 11:36:19
+Flat White,Dine-in,2,2026-09-03 11:41:19
+Bacon & Egg Roll,Dine-in,1,2026-09-03 11:55:03
+Flat White,Dine-in,1,2026-09-03 12:05:32
+Bacon & Egg Roll,Dine-in,3,2026-09-03 12:12:48
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-03 12:15:55
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-03 12:20:55
+Avocado Toast,Menulog,1,2026-09-03 12:30:33
+Avocado Toast,Dine-in,2,2026-09-03 12:48:25
+Flat White,Dine-in,1,2026-09-03 12:53:19
+Avocado Toast,Dine-in,1,2026-09-03 13:08:20
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-03 13:35:40
+Bacon & Egg Roll,Dine-in,2,2026-09-03 15:08:48
+Caesar Salad,DoorDash,1,2026-09-03 15:43:39
+Banana Bread,DoorDash,1,2026-09-04 08:03:37
+Flat White,Dine-in,1,2026-09-04 08:08:30
+Flat White,Dine-in,1,2026-09-04 08:21:18
+Flat White,Dine-in,1,2026-09-04 08:26:37
+Avocado Toast,Dine-in,1,2026-09-04 08:32:49
+Bacon & Egg Roll,DoorDash,1,2026-09-04 08:39:47
+Bacon & Egg Roll,Dine-in,1,2026-09-04 09:03:58
+Caesar Salad,Dine-in,1,2026-09-04 09:18:36
+Caesar Salad,Dine-in,2,2026-09-04 09:30:12
+Chicken Schnitzel Burger,DoorDash,1,2026-09-04 09:30:13
+Flat White,Dine-in,2,2026-09-04 09:46:29
+Caesar Salad,Uber Eats,1,2026-09-04 09:59:59
+Chicken Schnitzel Burger,Dine-in,3,2026-09-04 11:24:20
+Flat White,Dine-in,1,2026-09-04 11:40:14
+Avocado Toast,Dine-in,1,2026-09-04 11:43:49
+Caesar Salad,Uber Eats,1,2026-09-04 12:00:35
+Flat White,Dine-in,1,2026-09-04 12:12:01
+Chicken Schnitzel Burger,Dine-in,2,2026-09-04 12:24:09
+Flat White,Dine-in,1,2026-09-04 12:24:57
+Flat White,Dine-in,1,2026-09-04 12:25:52
+Banana Bread,Dine-in,2,2026-09-04 12:38:30
+Avocado Toast,Dine-in,2,2026-09-04 12:45:08
+Caesar Salad,Dine-in,1,2026-09-04 12:54:59
+Caesar Salad,Dine-in,1,2026-09-04 13:08:54
+Bacon & Egg Roll,Dine-in,3,2026-09-04 13:18:02
+Flat White,Dine-in,1,2026-09-04 13:30:30
+Chicken Schnitzel Burger,Menulog,2,2026-09-04 14:02:53
+Flat White,Dine-in,1,2026-09-04 14:19:49
+Avocado Toast,Dine-in,3,2026-09-04 14:59:18
+Chicken Schnitzel Burger,Dine-in,2,2026-09-05 07:24:43
+Flat White,Dine-in,1,2026-09-05 07:28:54
+Bacon & Egg Roll,Dine-in,1,2026-09-05 07:38:02
+Chicken Schnitzel Burger,Menulog,1,2026-09-05 08:08:30
+Flat White,Dine-in,1,2026-09-05 08:12:59
+Caesar Salad,DoorDash,1,2026-09-05 08:19:10
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-05 08:37:31
+Caesar Salad,Dine-in,2,2026-09-05 09:02:25
+Chicken Schnitzel Burger,Dine-in,1,2026-09-05 09:04:34
+Chicken Schnitzel Burger,Dine-in,1,2026-09-05 09:32:56
+Caesar Salad,Uber Eats,3,2026-09-05 09:46:36
+Caesar Salad,Dine-in,1,2026-09-05 09:48:38
+Chicken Schnitzel Burger,Dine-in,1,2026-09-05 10:19:24
+Flat White,Dine-in,1,2026-09-05 10:33:08
+Caesar Salad,Uber Eats,2,2026-09-05 10:52:00
+Caesar Salad,DoorDash,1,2026-09-05 11:29:36
+Caesar Salad,DoorDash,1,2026-09-05 11:30:48
+Flat White,Dine-in,1,2026-09-05 11:36:34
+Flat White,Dine-in,2,2026-09-05 11:36:38
+Avocado Toast,DoorDash,2,2026-09-05 11:49:18
+Flat White,Dine-in,3,2026-09-05 11:53:20
+Flat White,Dine-in,1,2026-09-05 12:04:58
+Chicken Schnitzel Burger,Dine-in,2,2026-09-05 12:08:32
+Avocado Toast,Dine-in,2,2026-09-05 12:19:44
+Banana Bread,Dine-in,1,2026-09-05 12:27:34
+Bacon & Egg Roll,Dine-in,1,2026-09-05 12:39:49
+Bacon & Egg Roll,Menulog,1,2026-09-05 13:07:11
+Avocado Toast,DoorDash,1,2026-09-05 13:09:51
+Flat White,Dine-in,1,2026-09-05 13:37:46
+Bacon & Egg Roll,Dine-in,1,2026-09-05 13:42:33
+Avocado Toast,Uber Eats,3,2026-09-05 13:58:11
+Banana Bread,Dine-in,1,2026-09-05 14:02:18
+Flat White,Dine-in,1,2026-09-05 14:19:58
+Banana Bread,Dine-in,1,2026-09-05 14:24:24
+Banana Bread,Menulog,1,2026-09-05 15:30:58
+Bacon & Egg Roll,Dine-in,2,2026-09-05 15:41:26
+Avocado Toast,Dine-in,1,2026-09-05 15:41:42
+Avocado Toast,Dine-in,1,2026-09-05 15:53:00
+Avocado Toast,Dine-in,1,2026-09-06 07:16:15
+Flat White,Dine-in,1,2026-09-06 07:19:28
+Banana Bread,Dine-in,1,2026-09-06 07:34:35
+Avocado Toast,Uber Eats,1,2026-09-06 07:40:42
+Chicken Schnitzel Burger,DoorDash,2,2026-09-06 07:54:41
+Caesar Salad,Dine-in,1,2026-09-06 08:25:20
+Flat White,Dine-in,1,2026-09-06 08:28:35
+Bacon & Egg Roll,Dine-in,1,2026-09-06 08:34:31
+Flat White,DoorDash,1,2026-09-06 08:40:14
+Banana Bread,Dine-in,2,2026-09-06 08:57:55
+Avocado Toast,Dine-in,1,2026-09-06 09:05:38
+Chicken Schnitzel Burger,DoorDash,1,2026-09-06 09:24:17
+Flat White,Dine-in,1,2026-09-06 09:24:49
+Bacon & Egg Roll,Dine-in,2,2026-09-06 10:04:19
+Bacon & Egg Roll,Uber Eats,1,2026-09-06 10:09:12
+Flat White,Dine-in,1,2026-09-06 11:03:40
+Flat White,Dine-in,1,2026-09-06 11:04:10
+Avocado Toast,Dine-in,1,2026-09-06 11:08:19
+Bacon & Egg Roll,Menulog,3,2026-09-06 11:10:43
+Flat White,Dine-in,1,2026-09-06 11:14:47
+Flat White,Dine-in,2,2026-09-06 11:18:01
+Avocado Toast,Dine-in,1,2026-09-06 11:37:34
+Flat White,Dine-in,2,2026-09-06 11:41:43
+Banana Bread,Menulog,3,2026-09-06 11:53:54
+Banana Bread,Dine-in,1,2026-09-06 12:01:40
+Chicken Schnitzel Burger,Dine-in,1,2026-09-06 12:16:52
+Bacon & Egg Roll,Dine-in,1,2026-09-06 12:19:20
+Flat White,Dine-in,3,2026-09-06 12:32:47
+Flat White,Dine-in,1,2026-09-06 12:40:09
+Bacon & Egg Roll,Dine-in,1,2026-09-06 12:47:31
+Caesar Salad,Dine-in,1,2026-09-06 12:51:15
+Caesar Salad,DoorDash,1,2026-09-06 13:01:13
+Bacon & Egg Roll,Uber Eats,1,2026-09-06 13:21:24
+Flat White,Dine-in,1,2026-09-06 13:21:38
+Bacon & Egg Roll,Uber Eats,1,2026-09-06 13:28:21
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-06 13:36:54
+Bacon & Egg Roll,Dine-in,1,2026-09-06 13:50:26
+Caesar Salad,Dine-in,1,2026-09-06 14:11:06
+Flat White,DoorDash,2,2026-09-06 14:13:28
+Chicken Schnitzel Burger,Menulog,1,2026-09-06 14:27:11
+Bacon & Egg Roll,Dine-in,1,2026-09-06 14:29:36
+Chicken Schnitzel Burger,Dine-in,1,2026-09-06 14:43:59
+Bacon & Egg Roll,Dine-in,1,2026-09-07 07:01:50
+Banana Bread,Dine-in,3,2026-09-07 08:10:31
+Chicken Schnitzel Burger,Dine-in,2,2026-09-07 08:15:42
+Caesar Salad,Uber Eats,1,2026-09-07 09:06:43
+Avocado Toast,Dine-in,1,2026-09-07 09:29:39
+Flat White,Dine-in,1,2026-09-07 09:45:51
+Bacon & Egg Roll,Dine-in,1,2026-09-07 09:50:13
+Flat White,Dine-in,1,2026-09-07 10:09:32
+Flat White,Dine-in,1,2026-09-07 10:24:04
+Chicken Schnitzel Burger,Dine-in,1,2026-09-07 10:31:40
+Chicken Schnitzel Burger,Dine-in,2,2026-09-07 11:23:20
+Banana Bread,Dine-in,2,2026-09-07 11:35:10
+Flat White,Dine-in,1,2026-09-07 11:41:43
+Banana Bread,DoorDash,1,2026-09-07 11:43:31
+Chicken Schnitzel Burger,Dine-in,1,2026-09-07 11:59:58
+Avocado Toast,Dine-in,1,2026-09-07 12:09:22
+Caesar Salad,Uber Eats,1,2026-09-07 12:14:28
+Flat White,Dine-in,1,2026-09-07 12:28:20
+Caesar Salad,DoorDash,2,2026-09-07 12:43:08
+Bacon & Egg Roll,Uber Eats,1,2026-09-07 13:00:31
+Banana Bread,Dine-in,1,2026-09-07 13:06:00
+Chicken Schnitzel Burger,DoorDash,2,2026-09-07 13:28:37
+Avocado Toast,Dine-in,1,2026-09-07 13:40:11
+Avocado Toast,Dine-in,1,2026-09-07 14:05:07
+Caesar Salad,Uber Eats,1,2026-09-07 14:20:38
+Avocado Toast,Dine-in,1,2026-09-07 15:44:57
+Avocado Toast,Dine-in,1,2026-09-08 07:21:52
+Avocado Toast,Uber Eats,1,2026-09-08 07:22:34
+Flat White,Dine-in,1,2026-09-08 07:42:57
+Caesar Salad,DoorDash,1,2026-09-08 07:50:56
+Flat White,Dine-in,1,2026-09-08 08:04:08
+Caesar Salad,Menulog,1,2026-09-08 08:05:46
+Banana Bread,Dine-in,2,2026-09-08 08:48:50
+Chicken Schnitzel Burger,Dine-in,3,2026-09-08 08:53:41
+Chicken Schnitzel Burger,DoorDash,2,2026-09-08 09:17:54
+Banana Bread,Dine-in,2,2026-09-08 09:55:59
+Bacon & Egg Roll,Dine-in,2,2026-09-08 11:07:36
+Flat White,Dine-in,1,2026-09-08 11:10:49
+Banana Bread,Dine-in,2,2026-09-08 11:20:53
+Flat White,Dine-in,3,2026-09-08 11:22:55
+Avocado Toast,Dine-in,3,2026-09-08 12:15:13
+Chicken Schnitzel Burger,Dine-in,1,2026-09-08 12:40:27
+Flat White,Dine-in,1,2026-09-08 12:44:55
+Flat White,Dine-in,1,2026-09-08 12:48:14
+Avocado Toast,Dine-in,2,2026-09-08 12:56:23
+Flat White,Dine-in,1,2026-09-08 13:01:07
+Bacon & Egg Roll,DoorDash,1,2026-09-08 13:02:48
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-08 13:25:31
+Caesar Salad,Menulog,1,2026-09-08 13:50:34
+Avocado Toast,Dine-in,1,2026-09-08 13:54:46
+Avocado Toast,DoorDash,2,2026-09-08 13:57:43
+Flat White,Dine-in,1,2026-09-08 15:27:12
+Flat White,Dine-in,2,2026-09-09 08:07:37
+Avocado Toast,Dine-in,1,2026-09-09 08:30:49
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-09 08:32:00
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-09 08:51:33
+Flat White,Menulog,1,2026-09-09 09:24:55
+Caesar Salad,DoorDash,1,2026-09-09 09:32:58
+Flat White,Dine-in,1,2026-09-09 09:40:38
+Avocado Toast,Menulog,1,2026-09-09 10:09:11
+Chicken Schnitzel Burger,Dine-in,1,2026-09-09 10:44:25
+Banana Bread,Dine-in,1,2026-09-09 11:18:49
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-09 11:23:10
+Caesar Salad,Dine-in,1,2026-09-09 11:39:41
+Chicken Schnitzel Burger,DoorDash,2,2026-09-09 12:01:21
+Chicken Schnitzel Burger,Menulog,2,2026-09-09 12:10:23
+Flat White,Dine-in,1,2026-09-09 12:17:52
+Flat White,Dine-in,1,2026-09-09 12:18:49
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-09 12:19:42
+Flat White,Dine-in,1,2026-09-09 12:36:40
+Bacon & Egg Roll,Dine-in,1,2026-09-09 12:44:00
+Flat White,Dine-in,1,2026-09-09 12:50:57
+Chicken Schnitzel Burger,DoorDash,1,2026-09-09 12:53:41
+Flat White,Dine-in,1,2026-09-09 12:54:15
+Flat White,Dine-in,2,2026-09-09 13:13:33
+Flat White,Dine-in,1,2026-09-09 13:15:17
+Flat White,Dine-in,1,2026-09-09 13:55:08
+Avocado Toast,Uber Eats,2,2026-09-09 14:39:43
+Bacon & Egg Roll,Dine-in,1,2026-09-09 14:47:41
+Flat White,DoorDash,1,2026-09-09 14:50:25
+Flat White,Dine-in,1,2026-09-10 07:12:18
+Caesar Salad,Uber Eats,1,2026-09-10 07:53:49
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-10 08:22:49
+Bacon & Egg Roll,Dine-in,1,2026-09-10 08:24:08
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-10 08:43:19
+Flat White,Dine-in,3,2026-09-10 08:49:37
+Caesar Salad,Dine-in,2,2026-09-10 09:51:34
+Avocado Toast,Dine-in,1,2026-09-10 09:58:11
+Banana Bread,Dine-in,2,2026-09-10 10:34:50
+Flat White,Dine-in,2,2026-09-10 10:40:41
+Avocado Toast,Menulog,3,2026-09-10 10:46:25
+Avocado Toast,Uber Eats,2,2026-09-10 10:57:23
+Flat White,Dine-in,1,2026-09-10 11:37:31
+Bacon & Egg Roll,Dine-in,1,2026-09-10 11:40:52
+Flat White,Dine-in,1,2026-09-10 11:47:35
+Bacon & Egg Roll,Dine-in,2,2026-09-10 11:50:15
+Chicken Schnitzel Burger,Dine-in,1,2026-09-10 12:08:15
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-10 12:16:52
+Caesar Salad,Uber Eats,1,2026-09-10 12:19:06
+Avocado Toast,Uber Eats,1,2026-09-10 12:41:18
+Flat White,Menulog,1,2026-09-10 12:44:56
+Caesar Salad,Dine-in,1,2026-09-10 13:20:09
+Bacon & Egg Roll,Menulog,1,2026-09-10 13:20:20
+Bacon & Egg Roll,Dine-in,1,2026-09-10 13:51:21
+Chicken Schnitzel Burger,Menulog,3,2026-09-10 15:09:45
+Bacon & Egg Roll,DoorDash,1,2026-09-10 15:12:57
+Avocado Toast,Uber Eats,1,2026-09-11 07:58:39
+Banana Bread,Dine-in,3,2026-09-11 08:42:15
+Flat White,Dine-in,1,2026-09-11 09:04:15
+Avocado Toast,Dine-in,1,2026-09-11 09:14:01
+Bacon & Egg Roll,Dine-in,1,2026-09-11 09:31:02
+Flat White,Dine-in,3,2026-09-11 10:06:21
+Caesar Salad,Dine-in,2,2026-09-11 10:46:44
+Banana Bread,Dine-in,1,2026-09-11 11:12:53
+Flat White,Uber Eats,2,2026-09-11 11:54:49
+Caesar Salad,Uber Eats,2,2026-09-11 13:20:03
+Avocado Toast,Uber Eats,3,2026-09-11 13:31:41
+Caesar Salad,Dine-in,1,2026-09-11 13:39:50
+Bacon & Egg Roll,Dine-in,1,2026-09-11 13:54:11
+Bacon & Egg Roll,DoorDash,2,2026-09-11 13:55:23
+Caesar Salad,DoorDash,1,2026-09-11 14:01:45
+Flat White,Dine-in,1,2026-09-11 14:39:14
+Flat White,Dine-in,1,2026-09-11 14:52:45
+Bacon & Egg Roll,DoorDash,1,2026-09-11 15:14:36
+Bacon & Egg Roll,Dine-in,1,2026-09-11 15:33:22
+Flat White,Dine-in,1,2026-09-12 07:03:58
+Avocado Toast,Dine-in,1,2026-09-12 07:05:18
+Bacon & Egg Roll,Dine-in,1,2026-09-12 07:13:15
+Avocado Toast,Dine-in,1,2026-09-12 07:28:29
+Flat White,Dine-in,2,2026-09-12 07:45:32
+Chicken Schnitzel Burger,Dine-in,3,2026-09-12 08:06:36
+Chicken Schnitzel Burger,DoorDash,2,2026-09-12 08:09:09
+Chicken Schnitzel Burger,Dine-in,1,2026-09-12 08:13:10
+Avocado Toast,Dine-in,3,2026-09-12 08:13:51
+Chicken Schnitzel Burger,DoorDash,1,2026-09-12 08:25:09
+Caesar Salad,Dine-in,1,2026-09-12 08:25:36
+Banana Bread,Dine-in,1,2026-09-12 08:50:25
+Avocado Toast,Uber Eats,1,2026-09-12 08:52:40
+Flat White,Dine-in,1,2026-09-12 09:23:01
+Banana Bread,Dine-in,1,2026-09-12 09:47:28
+Avocado Toast,Dine-in,1,2026-09-12 09:53:57
+Flat White,Dine-in,1,2026-09-12 10:54:45
+Caesar Salad,Dine-in,1,2026-09-12 10:56:21
+Avocado Toast,Dine-in,1,2026-09-12 10:56:24
+Bacon & Egg Roll,Dine-in,1,2026-09-12 11:11:12
+Flat White,Dine-in,1,2026-09-12 11:25:40
+Caesar Salad,Dine-in,1,2026-09-12 11:28:11
+Banana Bread,Dine-in,1,2026-09-12 11:33:55
+Chicken Schnitzel Burger,Dine-in,2,2026-09-12 11:58:55
+Banana Bread,Uber Eats,1,2026-09-12 11:59:46
+Flat White,Dine-in,2,2026-09-12 12:03:24
+Flat White,Dine-in,2,2026-09-12 12:05:12
+Chicken Schnitzel Burger,DoorDash,1,2026-09-12 12:06:05
+Bacon & Egg Roll,Dine-in,1,2026-09-12 12:14:35
+Banana Bread,Dine-in,1,2026-09-12 12:24:11
+Avocado Toast,Dine-in,1,2026-09-12 12:27:10
+Chicken Schnitzel Burger,Uber Eats,3,2026-09-12 12:59:30
+Flat White,Dine-in,1,2026-09-12 13:02:18
+Chicken Schnitzel Burger,DoorDash,2,2026-09-12 13:05:24
+Avocado Toast,Uber Eats,1,2026-09-12 13:10:46
+Flat White,Dine-in,2,2026-09-12 13:36:41
+Bacon & Egg Roll,Dine-in,1,2026-09-12 13:54:44
+Bacon & Egg Roll,Dine-in,2,2026-09-12 13:56:26
+Chicken Schnitzel Burger,DoorDash,1,2026-09-12 15:09:07
+Banana Bread,Menulog,1,2026-09-12 15:57:30
+Flat White,Dine-in,1,2026-09-13 07:17:40
+Avocado Toast,DoorDash,1,2026-09-13 07:26:42
+Flat White,Dine-in,1,2026-09-13 07:31:18
+Flat White,Dine-in,1,2026-09-13 08:07:53
+Caesar Salad,Dine-in,1,2026-09-13 08:11:38
+Banana Bread,Dine-in,1,2026-09-13 08:14:47
+Banana Bread,Dine-in,1,2026-09-13 08:58:58
+Avocado Toast,Dine-in,1,2026-09-13 09:16:13
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-13 09:53:33
+Caesar Salad,Dine-in,2,2026-09-13 10:06:00
+Chicken Schnitzel Burger,Menulog,2,2026-09-13 10:19:26
+Avocado Toast,Menulog,1,2026-09-13 10:36:57
+Avocado Toast,Dine-in,2,2026-09-13 10:37:18
+Caesar Salad,Dine-in,2,2026-09-13 10:41:38
+Chicken Schnitzel Burger,Dine-in,1,2026-09-13 10:43:08
+Caesar Salad,DoorDash,2,2026-09-13 10:57:06
+Flat White,DoorDash,1,2026-09-13 11:07:35
+Avocado Toast,DoorDash,2,2026-09-13 11:48:49
+Avocado Toast,Uber Eats,1,2026-09-13 11:55:49
+Caesar Salad,Uber Eats,2,2026-09-13 11:58:11
+Chicken Schnitzel Burger,Dine-in,1,2026-09-13 12:00:28
+Bacon & Egg Roll,Dine-in,1,2026-09-13 12:03:42
+Caesar Salad,DoorDash,1,2026-09-13 12:22:19
+Flat White,Dine-in,1,2026-09-13 12:35:11
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-13 12:36:52
+Flat White,Dine-in,1,2026-09-13 12:37:39
+Avocado Toast,Dine-in,1,2026-09-13 12:49:05
+Flat White,Uber Eats,2,2026-09-13 13:13:54
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-13 13:19:18
+Avocado Toast,DoorDash,2,2026-09-13 13:24:56
+Chicken Schnitzel Burger,Dine-in,1,2026-09-13 13:31:12
+Avocado Toast,DoorDash,1,2026-09-13 13:51:38
+Avocado Toast,DoorDash,1,2026-09-13 13:58:42
+Caesar Salad,DoorDash,1,2026-09-13 14:24:00
+Flat White,Dine-in,1,2026-09-13 14:41:19
+Flat White,Dine-in,1,2026-09-13 14:44:59
+Flat White,Dine-in,1,2026-09-13 14:45:45
+Flat White,Dine-in,1,2026-09-13 15:13:46
+Bacon & Egg Roll,Dine-in,2,2026-09-13 15:22:45
+Avocado Toast,Uber Eats,3,2026-09-14 07:14:35
+Banana Bread,Dine-in,1,2026-09-14 07:14:54
+Flat White,Dine-in,1,2026-09-14 07:18:23
+Flat White,Dine-in,2,2026-09-14 08:21:22
+Bacon & Egg Roll,Dine-in,1,2026-09-14 08:24:49
+Chicken Schnitzel Burger,DoorDash,1,2026-09-14 08:25:29
+Avocado Toast,DoorDash,3,2026-09-14 08:26:58
+Bacon & Egg Roll,Dine-in,1,2026-09-14 08:31:47
+Flat White,Dine-in,2,2026-09-14 08:48:56
+Caesar Salad,Menulog,1,2026-09-14 09:28:39
+Caesar Salad,Uber Eats,2,2026-09-14 09:44:35
+Avocado Toast,Dine-in,2,2026-09-14 10:04:16
+Flat White,Dine-in,3,2026-09-14 10:29:52
+Caesar Salad,DoorDash,1,2026-09-14 10:38:38
+Caesar Salad,Dine-in,1,2026-09-14 10:59:40
+Flat White,Dine-in,1,2026-09-14 11:00:52
+Flat White,Dine-in,1,2026-09-14 11:03:35
+Caesar Salad,DoorDash,1,2026-09-14 11:13:41
+Banana Bread,Dine-in,1,2026-09-14 11:18:16
+Chicken Schnitzel Burger,Dine-in,1,2026-09-14 11:42:23
+Chicken Schnitzel Burger,Dine-in,2,2026-09-14 11:42:37
+Banana Bread,Dine-in,1,2026-09-14 11:44:06
+Flat White,Dine-in,2,2026-09-14 11:47:36
+Avocado Toast,Dine-in,1,2026-09-14 11:51:36
+Bacon & Egg Roll,Dine-in,1,2026-09-14 11:58:58
+Avocado Toast,Uber Eats,2,2026-09-14 12:06:16
+Chicken Schnitzel Burger,Dine-in,1,2026-09-14 12:30:22
+Bacon & Egg Roll,Uber Eats,2,2026-09-14 12:51:10
+Avocado Toast,Dine-in,3,2026-09-14 13:04:46
+Flat White,Dine-in,3,2026-09-14 13:33:33
+Avocado Toast,DoorDash,2,2026-09-14 13:55:10
+Flat White,Dine-in,1,2026-09-14 13:57:08
+Caesar Salad,Dine-in,1,2026-09-14 13:57:39
+Flat White,Dine-in,3,2026-09-14 15:28:51
+Avocado Toast,Dine-in,1,2026-09-14 15:58:44
+Bacon & Egg Roll,Dine-in,1,2026-09-15 07:06:01
+Bacon & Egg Roll,Dine-in,1,2026-09-15 07:17:35
+Caesar Salad,Dine-in,1,2026-09-15 07:24:24
+Chicken Schnitzel Burger,Dine-in,1,2026-09-15 07:43:07
+Caesar Salad,Dine-in,1,2026-09-15 07:50:18
+Chicken Schnitzel Burger,DoorDash,1,2026-09-15 08:16:26
+Chicken Schnitzel Burger,Dine-in,2,2026-09-15 08:34:34
+Flat White,Dine-in,1,2026-09-15 09:05:04
+Flat White,Dine-in,1,2026-09-15 09:50:10
+Flat White,Dine-in,1,2026-09-15 10:32:50
+Bacon & Egg Roll,Dine-in,2,2026-09-15 10:52:04
+Banana Bread,Uber Eats,2,2026-09-15 11:40:04
+Caesar Salad,DoorDash,1,2026-09-15 11:47:38
+Caesar Salad,Menulog,1,2026-09-15 11:48:41
+Bacon & Egg Roll,Uber Eats,1,2026-09-15 11:59:09
+Caesar Salad,Dine-in,3,2026-09-15 12:11:32
+Chicken Schnitzel Burger,Dine-in,1,2026-09-15 12:18:43
+Avocado Toast,Dine-in,1,2026-09-15 12:20:32
+Flat White,Dine-in,2,2026-09-15 12:21:23
+Flat White,DoorDash,1,2026-09-15 12:32:51
+Chicken Schnitzel Burger,DoorDash,1,2026-09-15 12:33:14
+Chicken Schnitzel Burger,Dine-in,2,2026-09-15 12:35:30
+Caesar Salad,Dine-in,1,2026-09-15 12:37:02
+Chicken Schnitzel Burger,DoorDash,2,2026-09-15 12:39:15
+Chicken Schnitzel Burger,DoorDash,1,2026-09-15 12:43:47
+Chicken Schnitzel Burger,Menulog,2,2026-09-15 12:53:42
+Banana Bread,Dine-in,2,2026-09-15 12:57:53
+Avocado Toast,DoorDash,1,2026-09-15 13:13:34
+Flat White,Dine-in,2,2026-09-15 13:28:53
+Bacon & Egg Roll,Dine-in,1,2026-09-15 14:03:00
+Caesar Salad,Dine-in,1,2026-09-15 14:07:24
+Avocado Toast,DoorDash,1,2026-09-15 15:04:11
+Chicken Schnitzel Burger,DoorDash,2,2026-09-16 07:04:57
+Caesar Salad,Dine-in,3,2026-09-16 07:55:35
+Bacon & Egg Roll,Dine-in,1,2026-09-16 08:32:08
+Caesar Salad,Uber Eats,1,2026-09-16 08:42:51
+Flat White,Dine-in,3,2026-09-16 08:50:43
+Flat White,Dine-in,1,2026-09-16 09:12:46
+Avocado Toast,Uber Eats,1,2026-09-16 09:42:19
+Bacon & Egg Roll,DoorDash,1,2026-09-16 10:19:31
+Flat White,DoorDash,1,2026-09-16 10:37:13
+Caesar Salad,Uber Eats,1,2026-09-16 10:42:01
+Chicken Schnitzel Burger,Dine-in,1,2026-09-16 10:51:54
+Avocado Toast,Uber Eats,2,2026-09-16 10:53:23
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-16 11:05:19
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-16 11:42:15
+Flat White,Dine-in,3,2026-09-16 12:09:47
+Banana Bread,Dine-in,1,2026-09-16 12:15:06
+Flat White,Dine-in,1,2026-09-16 12:46:54
+Banana Bread,Dine-in,1,2026-09-16 12:58:50
+Flat White,Dine-in,1,2026-09-16 13:27:10
+Flat White,Dine-in,1,2026-09-16 13:54:52
+Caesar Salad,DoorDash,1,2026-09-16 14:54:32
+Chicken Schnitzel Burger,Dine-in,1,2026-09-16 15:30:41
+Flat White,Dine-in,2,2026-09-16 15:35:29
+Flat White,DoorDash,1,2026-09-17 07:16:59
+Chicken Schnitzel Burger,Dine-in,1,2026-09-17 07:33:27
+Bacon & Egg Roll,Uber Eats,1,2026-09-17 07:36:37
+Chicken Schnitzel Burger,Menulog,1,2026-09-17 07:46:46
+Bacon & Egg Roll,DoorDash,1,2026-09-17 07:49:43
+Bacon & Egg Roll,Dine-in,1,2026-09-17 08:00:24
+Avocado Toast,Dine-in,1,2026-09-17 08:04:32
+Caesar Salad,Dine-in,1,2026-09-17 08:30:49
+Flat White,Dine-in,1,2026-09-17 08:37:52
+Chicken Schnitzel Burger,Dine-in,1,2026-09-17 08:43:21
+Avocado Toast,DoorDash,1,2026-09-17 09:42:13
+Banana Bread,Dine-in,1,2026-09-17 09:58:14
+Chicken Schnitzel Burger,Dine-in,1,2026-09-17 10:08:06
+Caesar Salad,Dine-in,1,2026-09-17 10:09:27
+Chicken Schnitzel Burger,Menulog,2,2026-09-17 10:12:00
+Flat White,Dine-in,2,2026-09-17 10:23:39
+Chicken Schnitzel Burger,Dine-in,1,2026-09-17 10:24:23
+Flat White,Dine-in,1,2026-09-17 10:45:52
+Caesar Salad,Uber Eats,2,2026-09-17 11:30:30
+Flat White,Dine-in,1,2026-09-17 11:30:55
+Flat White,Dine-in,2,2026-09-17 11:30:56
+Caesar Salad,DoorDash,1,2026-09-17 11:47:58
+Chicken Schnitzel Burger,Menulog,2,2026-09-17 11:48:07
+Avocado Toast,DoorDash,3,2026-09-17 12:17:53
+Bacon & Egg Roll,DoorDash,1,2026-09-17 13:38:06
+Bacon & Egg Roll,Dine-in,1,2026-09-17 14:56:02
+Flat White,Dine-in,3,2026-09-18 07:49:52
+Caesar Salad,Dine-in,1,2026-09-18 08:00:47
+Flat White,Dine-in,2,2026-09-18 08:12:29
+Caesar Salad,Dine-in,3,2026-09-18 08:17:49
+Caesar Salad,Dine-in,1,2026-09-18 08:25:50
+Caesar Salad,DoorDash,2,2026-09-18 08:40:00
+Chicken Schnitzel Burger,Dine-in,1,2026-09-18 09:22:49
+Chicken Schnitzel Burger,Dine-in,1,2026-09-18 10:06:35
+Bacon & Egg Roll,Dine-in,3,2026-09-18 11:29:57
+Bacon & Egg Roll,Dine-in,1,2026-09-18 12:05:04
+Banana Bread,Dine-in,1,2026-09-18 12:35:58
+Chicken Schnitzel Burger,DoorDash,1,2026-09-18 12:43:02
+Bacon & Egg Roll,Dine-in,2,2026-09-18 12:47:14
+Caesar Salad,DoorDash,1,2026-09-18 13:30:11
+Caesar Salad,Uber Eats,2,2026-09-18 14:25:39
+Flat White,Uber Eats,2,2026-09-18 14:33:18
+Chicken Schnitzel Burger,Dine-in,1,2026-09-18 14:36:30
+Banana Bread,Uber Eats,2,2026-09-18 14:56:34
+Bacon & Egg Roll,Dine-in,1,2026-09-19 07:26:31
+Flat White,Dine-in,2,2026-09-19 07:42:22
+Banana Bread,Dine-in,1,2026-09-19 08:01:08
+Avocado Toast,Uber Eats,1,2026-09-19 08:06:07
+Flat White,Menulog,1,2026-09-19 08:13:52
+Avocado Toast,Dine-in,2,2026-09-19 08:33:51
+Banana Bread,Uber Eats,1,2026-09-19 08:38:29
+Bacon & Egg Roll,Dine-in,1,2026-09-19 09:09:05
+Chicken Schnitzel Burger,Uber Eats,3,2026-09-19 09:11:31
+Avocado Toast,Uber Eats,1,2026-09-19 09:17:38
+Bacon & Egg Roll,Dine-in,1,2026-09-19 09:18:28
+Avocado Toast,DoorDash,2,2026-09-19 09:23:35
+Caesar Salad,Menulog,1,2026-09-19 09:31:19
+Banana Bread,Dine-in,1,2026-09-19 09:55:43
+Bacon & Egg Roll,Dine-in,1,2026-09-19 10:22:55
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-19 10:23:26
+Avocado Toast,Dine-in,2,2026-09-19 10:25:17
+Chicken Schnitzel Burger,DoorDash,1,2026-09-19 10:55:16
+Avocado Toast,Uber Eats,2,2026-09-19 11:01:49
+Flat White,Dine-in,1,2026-09-19 11:09:55
+Avocado Toast,Dine-in,1,2026-09-19 11:20:44
+Chicken Schnitzel Burger,Dine-in,1,2026-09-19 11:40:34
+Banana Bread,Dine-in,2,2026-09-19 11:48:58
+Flat White,Dine-in,1,2026-09-19 11:49:47
+Chicken Schnitzel Burger,DoorDash,1,2026-09-19 11:54:58
+Caesar Salad,Dine-in,3,2026-09-19 12:05:13
+Caesar Salad,Uber Eats,3,2026-09-19 12:14:51
+Flat White,Dine-in,1,2026-09-19 12:31:57
+Chicken Schnitzel Burger,Dine-in,1,2026-09-19 12:34:11
+Caesar Salad,Dine-in,1,2026-09-19 12:48:54
+Chicken Schnitzel Burger,Dine-in,3,2026-09-19 12:52:06
+Avocado Toast,Dine-in,1,2026-09-19 12:55:16
+Bacon & Egg Roll,Dine-in,1,2026-09-19 13:12:09
+Chicken Schnitzel Burger,Menulog,1,2026-09-19 13:15:18
+Flat White,Uber Eats,2,2026-09-19 13:22:18
+Flat White,Dine-in,1,2026-09-19 13:23:47
+Bacon & Egg Roll,DoorDash,1,2026-09-19 14:30:20
+Banana Bread,Dine-in,1,2026-09-19 14:43:59
+Flat White,Dine-in,1,2026-09-19 15:34:59
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-20 07:23:12
+Avocado Toast,Uber Eats,1,2026-09-20 07:41:53
+Avocado Toast,DoorDash,1,2026-09-20 07:53:08
+Flat White,Dine-in,1,2026-09-20 07:54:23
+Flat White,Dine-in,1,2026-09-20 08:11:34
+Caesar Salad,DoorDash,2,2026-09-20 08:14:20
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-20 08:17:08
+Avocado Toast,DoorDash,1,2026-09-20 08:24:43
+Bacon & Egg Roll,Dine-in,1,2026-09-20 08:31:13
+Chicken Schnitzel Burger,Dine-in,1,2026-09-20 08:47:41
+Chicken Schnitzel Burger,Dine-in,1,2026-09-20 09:02:37
+Flat White,Dine-in,1,2026-09-20 09:23:56
+Banana Bread,DoorDash,1,2026-09-20 10:00:10
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-20 10:00:49
+Avocado Toast,Dine-in,1,2026-09-20 10:05:15
+Flat White,Dine-in,2,2026-09-20 10:06:49
+Flat White,Dine-in,1,2026-09-20 10:15:33
+Avocado Toast,Dine-in,1,2026-09-20 10:47:56
+Chicken Schnitzel Burger,Dine-in,1,2026-09-20 11:15:36
+Chicken Schnitzel Burger,Dine-in,1,2026-09-20 11:39:18
+Avocado Toast,DoorDash,2,2026-09-20 11:47:02
+Caesar Salad,Uber Eats,3,2026-09-20 11:50:02
+Avocado Toast,Dine-in,1,2026-09-20 12:03:23
+Banana Bread,DoorDash,1,2026-09-20 12:04:34
+Caesar Salad,DoorDash,1,2026-09-20 12:12:20
+Banana Bread,Dine-in,2,2026-09-20 12:18:41
+Flat White,Dine-in,2,2026-09-20 12:34:52
+Banana Bread,Dine-in,1,2026-09-20 12:47:59
+Flat White,Dine-in,1,2026-09-20 12:56:06
+Flat White,DoorDash,3,2026-09-20 12:59:56
+Bacon & Egg Roll,Dine-in,1,2026-09-20 13:11:08
+Flat White,Dine-in,2,2026-09-20 13:17:33
+Bacon & Egg Roll,Dine-in,2,2026-09-20 13:28:46
+Chicken Schnitzel Burger,DoorDash,1,2026-09-20 13:31:45
+Flat White,Dine-in,2,2026-09-20 13:53:00
+Chicken Schnitzel Burger,Uber Eats,3,2026-09-20 14:06:06
+Flat White,Dine-in,3,2026-09-20 14:30:19
+Chicken Schnitzel Burger,DoorDash,2,2026-09-20 14:35:10
+Caesar Salad,Uber Eats,3,2026-09-20 15:40:03
+Flat White,Dine-in,1,2026-09-21 07:13:47
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-21 07:36:47
+Flat White,Dine-in,1,2026-09-21 07:37:57
+Chicken Schnitzel Burger,DoorDash,3,2026-09-21 08:02:29
+Bacon & Egg Roll,Dine-in,2,2026-09-21 08:03:15
+Chicken Schnitzel Burger,DoorDash,1,2026-09-21 08:39:47
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-21 08:56:19
+Flat White,Dine-in,1,2026-09-21 09:30:39
+Banana Bread,Dine-in,1,2026-09-21 09:46:51
+Flat White,Dine-in,1,2026-09-21 09:50:44
+Caesar Salad,DoorDash,1,2026-09-21 09:52:51
+Flat White,Dine-in,1,2026-09-21 10:12:20
+Flat White,Dine-in,1,2026-09-21 10:43:59
+Banana Bread,Uber Eats,1,2026-09-21 10:48:40
+Bacon & Egg Roll,Dine-in,1,2026-09-21 11:13:24
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-21 11:14:09
+Flat White,Dine-in,1,2026-09-21 11:14:16
+Avocado Toast,Uber Eats,1,2026-09-21 12:08:48
+Flat White,Dine-in,1,2026-09-21 12:22:56
+Chicken Schnitzel Burger,Dine-in,1,2026-09-21 12:24:03
+Chicken Schnitzel Burger,DoorDash,1,2026-09-21 12:32:05
+Avocado Toast,Menulog,1,2026-09-21 12:44:52
+Banana Bread,Dine-in,2,2026-09-21 13:00:21
+Flat White,Dine-in,1,2026-09-21 13:12:43
+Avocado Toast,Dine-in,2,2026-09-21 13:14:47
+Bacon & Egg Roll,Dine-in,1,2026-09-21 13:44:44
+Banana Bread,Dine-in,1,2026-09-21 14:28:25
+Flat White,Dine-in,1,2026-09-21 14:46:04
+Flat White,Dine-in,1,2026-09-21 15:28:59
+Chicken Schnitzel Burger,Dine-in,1,2026-09-22 07:05:44
+Flat White,Dine-in,1,2026-09-22 07:24:42
+Caesar Salad,Menulog,2,2026-09-22 07:55:56
+Flat White,Dine-in,1,2026-09-22 08:08:37
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-22 08:26:48
+Banana Bread,Dine-in,3,2026-09-22 08:42:12
+Bacon & Egg Roll,Uber Eats,2,2026-09-22 09:10:27
+Flat White,Dine-in,1,2026-09-22 09:25:49
+Avocado Toast,DoorDash,1,2026-09-22 09:26:26
+Flat White,Dine-in,1,2026-09-22 09:40:19
+Bacon & Egg Roll,Dine-in,2,2026-09-22 09:45:57
+Caesar Salad,Menulog,1,2026-09-22 10:43:39
+Bacon & Egg Roll,Dine-in,1,2026-09-22 11:17:14
+Flat White,Dine-in,1,2026-09-22 11:21:31
+Caesar Salad,Dine-in,1,2026-09-22 11:27:19
+Chicken Schnitzel Burger,Menulog,1,2026-09-22 11:29:35
+Bacon & Egg Roll,Dine-in,1,2026-09-22 11:40:03
+Flat White,Dine-in,2,2026-09-22 11:41:23
+Caesar Salad,Menulog,2,2026-09-22 11:41:28
+Banana Bread,Dine-in,1,2026-09-22 11:46:07
+Bacon & Egg Roll,DoorDash,1,2026-09-22 12:09:49
+Flat White,Uber Eats,3,2026-09-22 12:38:36
+Chicken Schnitzel Burger,DoorDash,1,2026-09-22 12:47:36
+Chicken Schnitzel Burger,Menulog,2,2026-09-22 12:56:24
+Chicken Schnitzel Burger,Dine-in,2,2026-09-22 13:33:06
+Avocado Toast,DoorDash,1,2026-09-22 13:34:08
+Flat White,Dine-in,1,2026-09-22 15:06:57
+Flat White,Dine-in,3,2026-09-22 15:09:41
+Bacon & Egg Roll,Dine-in,1,2026-09-22 15:33:34
+Flat White,Dine-in,3,2026-09-22 15:55:39
+Caesar Salad,Dine-in,3,2026-09-23 07:01:29
+Chicken Schnitzel Burger,DoorDash,1,2026-09-23 07:38:00
+Bacon & Egg Roll,Uber Eats,1,2026-09-23 07:56:31
+Bacon & Egg Roll,Uber Eats,2,2026-09-23 08:09:11
+Flat White,Dine-in,1,2026-09-23 08:39:48
+Flat White,Menulog,1,2026-09-23 08:43:18
+Flat White,Dine-in,2,2026-09-23 09:26:33
+Chicken Schnitzel Burger,Dine-in,1,2026-09-23 11:02:49
+Chicken Schnitzel Burger,DoorDash,1,2026-09-23 11:11:56
+Caesar Salad,DoorDash,1,2026-09-23 12:05:07
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-23 12:07:43
+Flat White,Dine-in,1,2026-09-23 12:20:23
+Flat White,Dine-in,1,2026-09-23 12:28:18
+Caesar Salad,Uber Eats,1,2026-09-23 12:44:18
+Chicken Schnitzel Burger,Dine-in,1,2026-09-23 12:46:50
+Flat White,DoorDash,2,2026-09-23 12:53:38
+Caesar Salad,DoorDash,1,2026-09-23 13:03:11
+Bacon & Egg Roll,Dine-in,2,2026-09-23 13:04:18
+Bacon & Egg Roll,Uber Eats,2,2026-09-23 13:05:16
+Caesar Salad,Dine-in,1,2026-09-23 13:11:29
+Chicken Schnitzel Burger,Uber Eats,3,2026-09-23 13:12:21
+Flat White,Dine-in,2,2026-09-23 13:26:26
+Caesar Salad,Dine-in,3,2026-09-23 15:18:27
+Flat White,Dine-in,1,2026-09-23 15:22:59
+Avocado Toast,Uber Eats,1,2026-09-23 15:33:05
+Avocado Toast,Uber Eats,1,2026-09-24 07:13:52
+Avocado Toast,Dine-in,3,2026-09-24 08:02:29
+Flat White,Uber Eats,1,2026-09-24 08:32:01
+Flat White,Dine-in,1,2026-09-24 08:48:42
+Bacon & Egg Roll,Dine-in,1,2026-09-24 08:53:01
+Avocado Toast,Dine-in,3,2026-09-24 08:57:39
+Bacon & Egg Roll,Dine-in,1,2026-09-24 09:02:43
+Banana Bread,Dine-in,1,2026-09-24 09:30:46
+Chicken Schnitzel Burger,Menulog,2,2026-09-24 09:33:19
+Caesar Salad,DoorDash,1,2026-09-24 09:41:45
+Avocado Toast,Uber Eats,2,2026-09-24 09:55:56
+Bacon & Egg Roll,Uber Eats,1,2026-09-24 10:05:27
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-24 10:45:50
+Banana Bread,Dine-in,1,2026-09-24 11:02:41
+Avocado Toast,Uber Eats,3,2026-09-24 11:06:13
+Chicken Schnitzel Burger,Dine-in,1,2026-09-24 11:21:51
+Banana Bread,Dine-in,1,2026-09-24 11:36:46
+Avocado Toast,DoorDash,1,2026-09-24 11:37:26
+Avocado Toast,Uber Eats,1,2026-09-24 11:54:10
+Flat White,Dine-in,1,2026-09-24 12:06:52
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-24 12:11:38
+Chicken Schnitzel Burger,DoorDash,2,2026-09-24 12:17:26
+Flat White,Dine-in,3,2026-09-24 12:36:08
+Bacon & Egg Roll,Dine-in,1,2026-09-24 12:40:57
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-24 12:42:07
+Caesar Salad,Dine-in,2,2026-09-24 12:44:44
+Bacon & Egg Roll,Dine-in,1,2026-09-24 13:06:33
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-24 13:29:50
+Flat White,Dine-in,1,2026-09-24 13:34:28
+Chicken Schnitzel Burger,Dine-in,1,2026-09-24 14:51:18
+Banana Bread,Dine-in,1,2026-09-25 07:29:32
+Flat White,Dine-in,1,2026-09-25 07:32:25
+Caesar Salad,Dine-in,1,2026-09-25 08:24:53
+Flat White,Dine-in,1,2026-09-25 08:34:18
+Chicken Schnitzel Burger,Dine-in,1,2026-09-25 09:40:47
+Chicken Schnitzel Burger,Dine-in,1,2026-09-25 09:51:18
+Avocado Toast,Dine-in,1,2026-09-25 10:02:36
+Chicken Schnitzel Burger,DoorDash,1,2026-09-25 10:24:27
+Caesar Salad,Uber Eats,2,2026-09-25 10:31:41
+Flat White,Dine-in,1,2026-09-25 11:19:25
+Flat White,Uber Eats,2,2026-09-25 11:27:08
+Flat White,Dine-in,1,2026-09-25 11:28:24
+Caesar Salad,Dine-in,1,2026-09-25 11:37:19
+Chicken Schnitzel Burger,Dine-in,1,2026-09-25 12:11:42
+Chicken Schnitzel Burger,Dine-in,2,2026-09-25 12:17:29
+Chicken Schnitzel Burger,Dine-in,1,2026-09-25 12:20:19
+Bacon & Egg Roll,Uber Eats,2,2026-09-25 12:36:16
+Bacon & Egg Roll,Dine-in,1,2026-09-25 13:03:00
+Bacon & Egg Roll,Dine-in,2,2026-09-25 13:07:37
+Caesar Salad,Uber Eats,1,2026-09-25 13:15:45
+Chicken Schnitzel Burger,DoorDash,1,2026-09-25 13:38:59
+Bacon & Egg Roll,Dine-in,1,2026-09-25 13:55:01
+Flat White,Dine-in,2,2026-09-25 13:57:48
+Flat White,Dine-in,1,2026-09-25 14:05:09
+Banana Bread,Dine-in,1,2026-09-25 14:27:45
+Bacon & Egg Roll,Dine-in,1,2026-09-25 15:42:08
+Banana Bread,Dine-in,1,2026-09-26 07:00:53
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-26 07:07:38
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-26 07:29:59
+Bacon & Egg Roll,DoorDash,2,2026-09-26 08:04:04
+Avocado Toast,DoorDash,3,2026-09-26 08:38:08
+Flat White,Dine-in,1,2026-09-26 08:49:27
+Caesar Salad,Dine-in,1,2026-09-26 08:55:27
+Banana Bread,DoorDash,1,2026-09-26 09:24:57
+Banana Bread,Dine-in,1,2026-09-26 09:44:21
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-26 09:46:18
+Chicken Schnitzel Burger,DoorDash,1,2026-09-26 10:03:16
+Chicken Schnitzel Burger,DoorDash,2,2026-09-26 10:12:08
+Banana Bread,Uber Eats,1,2026-09-26 10:50:34
+Caesar Salad,Uber Eats,1,2026-09-26 11:29:49
+Flat White,Dine-in,1,2026-09-26 11:54:50
+Flat White,Dine-in,1,2026-09-26 11:59:12
+Caesar Salad,Menulog,1,2026-09-26 11:59:22
+Flat White,Dine-in,1,2026-09-26 12:07:03
+Flat White,Dine-in,1,2026-09-26 12:13:36
+Flat White,Dine-in,2,2026-09-26 12:18:41
+Avocado Toast,Uber Eats,3,2026-09-26 12:23:34
+Flat White,Dine-in,1,2026-09-26 12:33:21
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-26 12:34:14
+Chicken Schnitzel Burger,DoorDash,2,2026-09-26 12:41:54
+Bacon & Egg Roll,Dine-in,1,2026-09-26 12:49:20
+Caesar Salad,Uber Eats,1,2026-09-26 12:57:53
+Avocado Toast,Dine-in,3,2026-09-26 13:01:02
+Flat White,Dine-in,1,2026-09-26 13:09:41
+Bacon & Egg Roll,Dine-in,1,2026-09-26 13:11:57
+Avocado Toast,DoorDash,1,2026-09-26 13:16:50
+Avocado Toast,Dine-in,2,2026-09-26 13:21:05
+Bacon & Egg Roll,Dine-in,2,2026-09-26 13:34:14
+Chicken Schnitzel Burger,Dine-in,2,2026-09-26 13:48:26
+Chicken Schnitzel Burger,Dine-in,1,2026-09-26 14:31:30
+Chicken Schnitzel Burger,Menulog,1,2026-09-26 14:43:02
+Avocado Toast,Uber Eats,1,2026-09-26 15:51:47
+Flat White,Dine-in,2,2026-09-27 07:00:11
+Flat White,Dine-in,1,2026-09-27 07:02:02
+Flat White,Dine-in,3,2026-09-27 08:02:37
+Avocado Toast,Dine-in,1,2026-09-27 08:17:33
+Bacon & Egg Roll,Uber Eats,1,2026-09-27 08:21:14
+Chicken Schnitzel Burger,Dine-in,1,2026-09-27 08:21:51
+Caesar Salad,Dine-in,1,2026-09-27 08:22:18
+Chicken Schnitzel Burger,Uber Eats,2,2026-09-27 08:23:35
+Flat White,Menulog,1,2026-09-27 08:29:54
+Bacon & Egg Roll,Dine-in,1,2026-09-27 08:43:36
+Banana Bread,Dine-in,1,2026-09-27 08:44:36
+Chicken Schnitzel Burger,Menulog,1,2026-09-27 08:46:12
+Flat White,DoorDash,1,2026-09-27 09:27:16
+Caesar Salad,Dine-in,1,2026-09-27 09:44:51
+Chicken Schnitzel Burger,Dine-in,2,2026-09-27 09:46:27
+Bacon & Egg Roll,Dine-in,1,2026-09-27 10:25:30
+Caesar Salad,Dine-in,1,2026-09-27 11:05:35
+Chicken Schnitzel Burger,Dine-in,3,2026-09-27 11:08:55
+Flat White,Dine-in,1,2026-09-27 11:56:27
+Flat White,Dine-in,1,2026-09-27 11:57:59
+Bacon & Egg Roll,Dine-in,1,2026-09-27 12:14:59
+Flat White,Dine-in,1,2026-09-27 12:20:14
+Avocado Toast,Dine-in,1,2026-09-27 12:33:29
+Flat White,Dine-in,1,2026-09-27 12:38:11
+Chicken Schnitzel Burger,Dine-in,2,2026-09-27 12:39:57
+Chicken Schnitzel Burger,DoorDash,1,2026-09-27 12:42:13
+Flat White,Dine-in,2,2026-09-27 12:45:40
+Flat White,Dine-in,1,2026-09-27 12:55:12
+Caesar Salad,DoorDash,1,2026-09-27 12:59:34
+Bacon & Egg Roll,DoorDash,1,2026-09-27 13:07:31
+Chicken Schnitzel Burger,Dine-in,1,2026-09-27 13:19:22
+Bacon & Egg Roll,Menulog,1,2026-09-27 13:31:55
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-27 13:40:39
+Chicken Schnitzel Burger,DoorDash,1,2026-09-27 13:46:28
+Flat White,DoorDash,1,2026-09-27 13:52:50
+Chicken Schnitzel Burger,DoorDash,1,2026-09-27 14:39:02
+Chicken Schnitzel Burger,Dine-in,1,2026-09-27 15:06:39
+Caesar Salad,Uber Eats,1,2026-09-27 15:30:31
+Avocado Toast,Dine-in,1,2026-09-28 07:23:22
+Flat White,Dine-in,1,2026-09-28 08:01:25
+Caesar Salad,DoorDash,2,2026-09-28 08:05:34
+Chicken Schnitzel Burger,Menulog,3,2026-09-28 08:17:07
+Bacon & Egg Roll,Dine-in,3,2026-09-28 09:07:46
+Chicken Schnitzel Burger,Menulog,1,2026-09-28 09:28:47
+Flat White,Dine-in,1,2026-09-28 09:38:41
+Caesar Salad,Dine-in,1,2026-09-28 09:41:50
+Bacon & Egg Roll,Dine-in,1,2026-09-28 10:39:02
+Banana Bread,Dine-in,1,2026-09-28 10:43:44
+Caesar Salad,Dine-in,1,2026-09-28 11:13:50
+Chicken Schnitzel Burger,DoorDash,1,2026-09-28 11:18:27
+Avocado Toast,DoorDash,1,2026-09-28 11:18:49
+Caesar Salad,DoorDash,2,2026-09-28 11:19:36
+Avocado Toast,Dine-in,2,2026-09-28 11:34:43
+Avocado Toast,Dine-in,2,2026-09-28 11:40:01
+Flat White,Dine-in,1,2026-09-28 11:48:37
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-28 12:13:08
+Chicken Schnitzel Burger,Menulog,1,2026-09-28 12:18:30
+Caesar Salad,Dine-in,2,2026-09-28 12:20:22
+Flat White,Dine-in,1,2026-09-28 12:42:20
+Avocado Toast,DoorDash,1,2026-09-28 12:57:42
+Flat White,Dine-in,1,2026-09-28 13:14:53
+Banana Bread,Dine-in,1,2026-09-28 13:29:05
+Chicken Schnitzel Burger,Dine-in,1,2026-09-28 14:32:58
+Flat White,Dine-in,1,2026-09-28 14:39:59
+Bacon & Egg Roll,Uber Eats,2,2026-09-28 14:59:20
+Caesar Salad,Dine-in,3,2026-09-28 15:25:12
+Flat White,Dine-in,1,2026-09-28 15:34:19
+Flat White,Dine-in,1,2026-09-28 15:36:08
+Banana Bread,Dine-in,2,2026-09-28 15:42:09
+Chicken Schnitzel Burger,Dine-in,2,2026-09-29 08:03:09
+Caesar Salad,Dine-in,1,2026-09-29 08:17:31
+Bacon & Egg Roll,Dine-in,1,2026-09-29 08:19:30
+Flat White,Dine-in,2,2026-09-29 08:19:40
+Caesar Salad,Uber Eats,1,2026-09-29 08:29:45
+Bacon & Egg Roll,Dine-in,1,2026-09-29 08:48:10
+Avocado Toast,Dine-in,1,2026-09-29 09:19:28
+Avocado Toast,Menulog,1,2026-09-29 09:26:40
+Chicken Schnitzel Burger,DoorDash,1,2026-09-29 09:58:10
+Flat White,Dine-in,1,2026-09-29 10:45:54
+Flat White,Dine-in,2,2026-09-29 11:26:51
+Bacon & Egg Roll,Dine-in,1,2026-09-29 11:31:35
+Flat White,Dine-in,2,2026-09-29 11:36:27
+Caesar Salad,Dine-in,1,2026-09-29 11:52:09
+Flat White,Dine-in,1,2026-09-29 11:59:04
+Chicken Schnitzel Burger,Dine-in,1,2026-09-29 12:07:23
+Bacon & Egg Roll,Dine-in,2,2026-09-29 12:19:17
+Banana Bread,Dine-in,1,2026-09-29 13:18:35
+Avocado Toast,Dine-in,1,2026-09-29 13:26:11
+Avocado Toast,Uber Eats,1,2026-09-29 13:39:44
+Flat White,Dine-in,2,2026-09-29 13:46:57
+Chicken Schnitzel Burger,Dine-in,1,2026-09-29 14:37:48
+Flat White,Dine-in,1,2026-09-30 07:09:54
+Chicken Schnitzel Burger,Dine-in,1,2026-09-30 07:52:37
+Flat White,Dine-in,1,2026-09-30 08:04:42
+Chicken Schnitzel Burger,Uber Eats,1,2026-09-30 08:07:48
+Flat White,Dine-in,1,2026-09-30 08:08:01
+Flat White,Uber Eats,1,2026-09-30 08:38:13
+Avocado Toast,Dine-in,1,2026-09-30 08:43:06
+Caesar Salad,Uber Eats,1,2026-09-30 08:44:09
+Flat White,Dine-in,1,2026-09-30 08:48:23
+Chicken Schnitzel Burger,Dine-in,1,2026-09-30 09:07:24
+Flat White,Dine-in,1,2026-09-30 09:54:32
+Caesar Salad,Uber Eats,1,2026-09-30 10:33:42
+Banana Bread,DoorDash,3,2026-09-30 11:09:49
+Flat White,Dine-in,1,2026-09-30 11:27:02
+Chicken Schnitzel Burger,DoorDash,3,2026-09-30 11:35:26
+Chicken Schnitzel Burger,Dine-in,1,2026-09-30 11:48:51
+Caesar Salad,Uber Eats,1,2026-09-30 11:58:16
+Flat White,Dine-in,1,2026-09-30 12:06:47
+Caesar Salad,Uber Eats,2,2026-09-30 12:48:21
+Avocado Toast,Menulog,1,2026-09-30 13:30:43
+Chicken Schnitzel Burger,DoorDash,1,2026-09-30 13:41:25
+Banana Bread,Dine-in,1,2026-09-30 13:46:31
+Chicken Schnitzel Burger,Dine-in,2,2026-09-30 14:10:57
+Avocado Toast,Uber Eats,2,2026-09-30 14:30:22
+Flat White,Dine-in,2,2026-09-30 14:58:32
+Banana Bread,Dine-in,1,2026-09-30 15:21:12
+Avocado Toast,Uber Eats,1,2026-09-30 15:24:38
+Flat White,Dine-in,1,2026-09-30 15:27:44
+Banana Bread,Dine-in,2,2026-10-01 07:12:23
+Chicken Schnitzel Burger,Menulog,3,2026-10-01 07:27:56
+Flat White,Dine-in,1,2026-10-01 07:51:33
+Flat White,Dine-in,1,2026-10-01 07:53:23
+Avocado Toast,Dine-in,2,2026-10-01 08:01:40
+Avocado Toast,Dine-in,1,2026-10-01 08:25:16
+Bacon & Egg Roll,Dine-in,1,2026-10-01 08:52:47
+Flat White,DoorDash,2,2026-10-01 09:06:27
+Avocado Toast,Uber Eats,1,2026-10-01 09:15:07
+Banana Bread,Dine-in,1,2026-10-01 09:21:10
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-01 09:41:19
+Chicken Schnitzel Burger,DoorDash,3,2026-10-01 10:24:20
+Avocado Toast,Dine-in,1,2026-10-01 10:29:02
+Flat White,Dine-in,1,2026-10-01 11:16:34
+Caesar Salad,Uber Eats,1,2026-10-01 11:27:27
+Chicken Schnitzel Burger,Uber Eats,2,2026-10-01 11:57:26
+Chicken Schnitzel Burger,Uber Eats,2,2026-10-01 12:05:45
+Flat White,Dine-in,2,2026-10-01 12:19:32
+Bacon & Egg Roll,Dine-in,1,2026-10-01 12:21:31
+Avocado Toast,Dine-in,3,2026-10-01 12:22:49
+Bacon & Egg Roll,Dine-in,1,2026-10-01 12:23:27
+Bacon & Egg Roll,DoorDash,1,2026-10-01 12:31:27
+Chicken Schnitzel Burger,DoorDash,1,2026-10-01 12:42:35
+Bacon & Egg Roll,Dine-in,2,2026-10-01 12:54:26
+Flat White,Dine-in,2,2026-10-01 12:54:27
+Banana Bread,DoorDash,1,2026-10-01 13:13:18
+Chicken Schnitzel Burger,Dine-in,1,2026-10-01 13:32:03
+Flat White,Dine-in,1,2026-10-01 13:54:49
+Flat White,Dine-in,1,2026-10-02 08:16:50
+Flat White,Dine-in,2,2026-10-02 09:19:55
+Avocado Toast,Dine-in,2,2026-10-02 09:27:13
+Flat White,Dine-in,3,2026-10-02 09:27:30
+Banana Bread,Uber Eats,1,2026-10-02 09:37:03
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-02 10:46:52
+Chicken Schnitzel Burger,DoorDash,3,2026-10-02 10:51:43
+Banana Bread,Dine-in,1,2026-10-02 10:58:52
+Flat White,Dine-in,1,2026-10-02 12:41:41
+Caesar Salad,Dine-in,3,2026-10-02 12:50:42
+Flat White,Dine-in,1,2026-10-02 12:59:07
+Flat White,Dine-in,1,2026-10-02 13:15:19
+Flat White,Dine-in,1,2026-10-02 13:21:53
+Bacon & Egg Roll,Menulog,1,2026-10-02 13:25:53
+Flat White,Dine-in,2,2026-10-02 13:31:30
+Caesar Salad,Dine-in,1,2026-10-02 13:46:31
+Bacon & Egg Roll,Menulog,1,2026-10-02 13:49:41
+Bacon & Egg Roll,Dine-in,3,2026-10-02 14:16:31
+Banana Bread,Dine-in,2,2026-10-02 14:23:30
+Bacon & Egg Roll,Menulog,1,2026-10-02 14:25:59
+Bacon & Egg Roll,Dine-in,1,2026-10-02 14:38:02
+Flat White,Dine-in,1,2026-10-03 07:08:31
+Caesar Salad,Dine-in,2,2026-10-03 07:09:03
+Caesar Salad,Uber Eats,1,2026-10-03 07:13:10
+Flat White,Dine-in,1,2026-10-03 07:33:27
+Banana Bread,DoorDash,2,2026-10-03 08:05:29
+Avocado Toast,DoorDash,1,2026-10-03 08:18:11
+Caesar Salad,Uber Eats,3,2026-10-03 08:19:31
+Bacon & Egg Roll,DoorDash,2,2026-10-03 08:20:45
+Flat White,Menulog,2,2026-10-03 08:58:04
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-03 09:05:26
+Chicken Schnitzel Burger,Dine-in,2,2026-10-03 09:20:27
+Flat White,Dine-in,1,2026-10-03 09:36:05
+Bacon & Egg Roll,Dine-in,1,2026-10-03 09:39:24
+Avocado Toast,Uber Eats,1,2026-10-03 09:43:07
+Caesar Salad,Menulog,3,2026-10-03 09:46:46
+Avocado Toast,DoorDash,1,2026-10-03 10:11:27
+Bacon & Egg Roll,Dine-in,3,2026-10-03 10:13:45
+Chicken Schnitzel Burger,Uber Eats,2,2026-10-03 10:57:59
+Chicken Schnitzel Burger,Uber Eats,2,2026-10-03 11:01:01
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-03 11:03:21
+Banana Bread,Dine-in,2,2026-10-03 11:14:45
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-03 11:24:30
+Avocado Toast,Dine-in,3,2026-10-03 11:29:31
+Chicken Schnitzel Burger,Uber Eats,3,2026-10-03 11:37:11
+Bacon & Egg Roll,Dine-in,2,2026-10-03 11:42:37
+Avocado Toast,Dine-in,3,2026-10-03 11:55:47
+Flat White,Dine-in,1,2026-10-03 12:05:00
+Caesar Salad,DoorDash,1,2026-10-03 12:05:25
+Caesar Salad,Uber Eats,2,2026-10-03 12:08:54
+Flat White,Menulog,1,2026-10-03 12:09:05
+Flat White,Dine-in,3,2026-10-03 12:09:35
+Caesar Salad,Menulog,1,2026-10-03 12:24:08
+Avocado Toast,Dine-in,1,2026-10-03 12:42:51
+Bacon & Egg Roll,Dine-in,3,2026-10-03 13:38:08
+Flat White,Dine-in,1,2026-10-03 13:46:43
+Bacon & Egg Roll,Dine-in,1,2026-10-03 13:51:41
+Bacon & Egg Roll,Dine-in,2,2026-10-03 14:18:57
+Caesar Salad,Dine-in,1,2026-10-03 14:29:12
+Caesar Salad,Dine-in,1,2026-10-03 14:38:42
+Caesar Salad,Uber Eats,1,2026-10-03 15:15:39
+Flat White,Dine-in,1,2026-10-03 15:43:14
+Bacon & Egg Roll,Dine-in,3,2026-10-04 07:25:31
+Flat White,Dine-in,1,2026-10-04 07:32:01
+Caesar Salad,Uber Eats,1,2026-10-04 08:01:13
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-04 08:14:31
+Chicken Schnitzel Burger,DoorDash,1,2026-10-04 08:17:23
+Caesar Salad,Uber Eats,3,2026-10-04 08:20:25
+Avocado Toast,Dine-in,2,2026-10-04 08:23:21
+Flat White,Dine-in,2,2026-10-04 08:27:01
+Caesar Salad,DoorDash,2,2026-10-04 08:34:01
+Avocado Toast,Uber Eats,1,2026-10-04 08:42:46
+Bacon & Egg Roll,Dine-in,1,2026-10-04 09:03:35
+Avocado Toast,Uber Eats,2,2026-10-04 09:08:43
+Avocado Toast,Dine-in,1,2026-10-04 09:48:48
+Avocado Toast,DoorDash,1,2026-10-04 10:05:26
+Banana Bread,Uber Eats,1,2026-10-04 10:30:51
+Bacon & Egg Roll,Uber Eats,1,2026-10-04 10:31:47
+Bacon & Egg Roll,Dine-in,1,2026-10-04 10:58:26
+Avocado Toast,Dine-in,1,2026-10-04 11:01:22
+Caesar Salad,Menulog,1,2026-10-04 11:01:55
+Flat White,Uber Eats,1,2026-10-04 11:17:57
+Bacon & Egg Roll,Dine-in,1,2026-10-04 11:32:06
+Caesar Salad,Dine-in,3,2026-10-04 11:41:33
+Flat White,Dine-in,1,2026-10-04 11:42:28
+Flat White,Dine-in,1,2026-10-04 11:50:26
+Banana Bread,Dine-in,1,2026-10-04 12:01:28
+Flat White,Dine-in,1,2026-10-04 12:05:42
+Avocado Toast,Dine-in,1,2026-10-04 12:30:22
+Chicken Schnitzel Burger,Dine-in,1,2026-10-04 12:39:23
+Bacon & Egg Roll,Dine-in,1,2026-10-04 12:41:22
+Avocado Toast,Uber Eats,1,2026-10-04 12:45:28
+Avocado Toast,Uber Eats,1,2026-10-04 12:55:42
+Avocado Toast,Dine-in,1,2026-10-04 12:58:38
+Chicken Schnitzel Burger,DoorDash,1,2026-10-04 12:59:28
+Banana Bread,Dine-in,1,2026-10-04 13:05:08
+Flat White,Dine-in,3,2026-10-04 13:11:13
+Chicken Schnitzel Burger,Uber Eats,1,2026-10-04 13:17:57
+Flat White,Dine-in,1,2026-10-04 13:25:03
+Caesar Salad,Dine-in,1,2026-10-04 13:46:45
+Flat White,Dine-in,1,2026-10-04 13:54:50
+Bacon & Egg Roll,Dine-in,3,2026-10-04 13:55:31
+Flat White,Dine-in,1,2026-10-04 13:57:32
+Flat White,Dine-in,1,2026-10-04 15:49:49
+Banana Bread,Dine-in,2,2026-10-04 15:50:39`;
+const SAMPLE_MENU = [['Flat White',4.80,0.90,0.45],['Avocado Toast',16.50,4.20,0.80],['Chicken Schnitzel Burger',18.90,6.80,0.95],['Caesar Salad',15.00,4.50,1.10],['Bacon & Egg Roll',9.50,2.60,0.60],['Banana Bread',7.00,1.40,0.40]];
+const SAMPLE_CH = [['Dine-in',0],['Uber Eats',30],['DoorDash',28],['Menulog',25]];
+const S = {menu:[],ch:[],csv:'',source:'sample',oh:30,tm:10,filter:'ALL'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => String(s).trim().replace(/\s+/g,' ').toLowerCase();
+const money = (n,d=0)=> (n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const CVAR = ['--c1','--c2','--c3','--c4','--c5','--c6'];
+const tip = $('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.display='block';const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;tip.style.left=x+'px';tip.style.top=y+'px'}
+function hideTip(){tip.style.display='none'}
+
+/* ---------- parsing ---------- */
+function splitLine(line,d){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c=='"'){if(line[i+1]=='"'){cur+='"';i++}else q=false}else cur+=c}else if(c=='"')q=true;else if(c==d){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
+function parseCSV(text){
+ const lines=text.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim().length);
+ if(!lines.length) return {error:'The file is empty.'};
+ const h=lines[0], d=[['\t',h.split('\t').length],[';',h.split(';').length],[',',h.split(',').length]].sort((a,b)=>b[1]-a[1])[0][0];
+ const head=splitLine(h,d).map(norm);
+ const find=(...names)=>head.findIndex(x=>names.some(n=>x===n||x.replace(/[_ ]/g,'')===n.replace(/[_ ]/g,'')));
+ const ci={item:find('item','item name','item_name','product','menu item'),ch:find('channel','channel name','channel_name','platform','order type','source'),q:find('quantity','qty','units','count'),t:find('sold_at','date','datetime','timestamp','time','sale_timestamp','order date','sale date')};
+ const miss=Object.entries({item:'item',ch:'channel',q:'quantity',t:'date'}).filter(([k])=>ci[k]<0).map(([,v])=>v);
+ if(miss.length) return {error:'Could not find a column for: '+miss.join(', ')+'. Found headers: '+head.join(', ')+'.'};
+ const rows=lines.slice(1).map((l,i)=>{const c=splitLine(l,d);return {line:i+2,item:c[ci.item]??'',ch:c[ci.ch]??'',q:c[ci.q]??'',t:c[ci.t]??''}});
+ return {rows};
+}
+function parseDate(s){
+ s=String(s).trim(); let y,mo,d,m;
+ if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)){y=+m[1];mo=+m[2];d=+m[3]}
+ else if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)){d=+m[1];mo=+m[2];y=+m[3]}
+ else return null;
+ if(mo<1||mo>12||d<1||d>31) return null;
+ const t=Date.UTC(y,mo-1,d); const dt=new Date(t);
+ if(dt.getUTCMonth()!=mo-1) return null;
+ return t/864e5;
+}
+const dayStr = n => new Date(n*864e5).toISOString().slice(0,10);
+const dayLbl = n => new Date(n*864e5).toLocaleDateString('en-AU',{day:'numeric',month:'short',timeZone:'UTC'});
+
+/* ---------- model ---------- */
+function compute(){
+ const parsed=parseCSV(S.csv);
+ if(parsed.error) return {error:parsed.error};
+ const menu=new Map(), chs=new Map();
+ S.menu.forEach(m=>{if(m.name.trim())menu.set(norm(m.name),m)});
+ S.ch.forEach((c,i)=>{if(c.name.trim())chs.set(norm(c.name),{...c,idx:i})});
+ const rejects=[], unkItems=new Set(), unkCh=new Set(), agg=new Map(), wk=new Map();
+ let n=0, rev=0, drev=0, fees=0, minD=Infinity, maxD=-Infinity;
+ for(const r of parsed.rows){
+  const m=menu.get(norm(r.item)), c=chs.get(norm(r.ch)), q=/^\d+$/.test(String(r.q).trim())?+String(r.q).trim():NaN, day=parseDate(r.t);
+  let why='';
+  if(!m){why='item not in menu';unkItems.add(r.item.trim())}
+  else if(!c){why='channel not in channel list';unkCh.add(r.ch.trim())}
+  else if(!(q>0)) why='quantity is not a whole number above 0';
+  else if(day==null) why='date not recognised';
+  if(why){rejects.push({line:r.line,raw:[r.item,r.ch,r.q,r.t].join(', '),why});continue}
+  const isD=c.rate>0, R=m.price*q, comm=R*c.rate/100, ing=m.ing*q, pack=isD?m.pack*q:0, np=R-comm-ing-pack;
+  n++; rev+=R; if(isD){drev+=R;fees+=comm+pack}
+  minD=Math.min(minD,day); maxD=Math.max(maxD,day);
+  const k=m.name+'|'+c.idx; let a=agg.get(k);
+  if(!a){a={item:m.name,channel:c.name,cidx:c.idx,isD,rate:c.rate,price:m.price,ing:m.ing,pack:m.pack,units:0,rev:0,np:0};agg.set(k,a)}
+  a.units+=q;a.rev+=R;a.np+=np;
+  const ws=day-((day+3)%7); let w=wk.get(ws); if(!w){w={ws,rev:0,np:0,drev:0};wk.set(ws,w)} w.rev+=R;w.np+=np;if(isD)w.drev+=R;
+ }
+ return {n,rev,drev,fees,days:n?maxD-minD+1:0,agg:[...agg.values()],weeks:[...wk.values()].sort((a,b)=>a.ws-b.ws),rejects,unkItems:[...unkItems],unkCh:[...unkCh],total:parsed.rows.length};
+}
+function recs(M,oh,tm){
+ return M.agg.filter(a=>a.isD&&a.rev>0).map(a=>{
+  const pao=a.np-a.rev*oh/100, marg=a.np/a.rev*100-oh, den=1-a.rate/100-oh/100-tm/100;
+  const sug=den>0?(a.ing+a.pack)/den:Infinity, cap=a.price*1.25;
+  const act=marg>=tm?'KEEP':sug<=cap?'REPRICE':marg<0?'PULL':'REPRICE';
+  const imp=(act=='KEEP'?0:act=='REPRICE'?a.units*Math.min(sug,cap)*tm/100-pao:-pao)*30/M.days;
+  return {item:a.item,channel:a.channel,units:a.units,marg,act,price:a.price,sug,imp};
+ }).sort((a,b)=>a.marg-b.marg);
+}
+
+/* ---------- inputs ---------- */
+function renderInputs(){
+ $('menuT').innerHTML='<tr><th>Item</th><th class="num">Dine-in price ($)</th><th class="num">Ingredient cost ($)</th><th class="num">Packaging ($)</th><th></th></tr>'+
+  S.menu.map((m,i)=>`<tr><td><input type="text" value="${esc(m.name)}" data-m="${i}" data-f="name" aria-label="Item name"></td><td class="num"><input type="number" step="0.01" min="0" value="${m.price}" data-m="${i}" data-f="price" aria-label="Price"></td><td class="num"><input type="number" step="0.01" min="0" value="${m.ing}" data-m="${i}" data-f="ing" aria-label="Ingredient cost"></td><td class="num"><input type="number" step="0.01" min="0" value="${m.pack}" data-m="${i}" data-f="pack" aria-label="Packaging cost"></td><td><button class="x" data-rm-m="${i}" aria-label="Remove item">✕</button></td></tr>`).join('');
+ $('chT').innerHTML='<tr><th>Channel</th><th class="num">Commission (%)</th><th></th></tr>'+
+  S.ch.map((c,i)=>`<tr><td><input type="text" value="${esc(c.name)}" data-c="${i}" data-f="name" aria-label="Channel name"></td><td class="num"><input type="number" step="0.5" min="0" max="100" value="${c.rate}" data-c="${i}" data-f="rate" aria-label="Commission percent"></td><td><button class="x" data-rm-c="${i}" aria-label="Remove channel">✕</button></td></tr>`).join('');
+ $('addCh').disabled=S.ch.length>=6;
+}
+document.addEventListener('input',e=>{
+ const t=e.target; if(t.dataset.m!==undefined){const m=S.menu[+t.dataset.m],f=t.dataset.f;m[f]=f=='name'?t.value:Math.max(0,parseFloat(t.value)||0);renderResults()}
+ else if(t.dataset.c!==undefined){const c=S.ch[+t.dataset.c],f=t.dataset.f;c[f]=f=='name'?t.value:Math.min(100,Math.max(0,parseFloat(t.value)||0));renderResults()}
+});
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button'); if(!t) return;
+ if(t.dataset.rmM!==undefined){S.menu.splice(+t.dataset.rmM,1);renderInputs();renderResults()}
+ if(t.dataset.rmC!==undefined){S.ch.splice(+t.dataset.rmC,1);renderInputs();renderResults()}
+ if(t.dataset.addItem!==undefined){S.menu.push({name:t.dataset.addItem,price:0,ing:0,pack:0});renderInputs();renderResults()}
+ if(t.dataset.addCh!==undefined){S.ch.push({name:t.dataset.addCh,rate:0});renderInputs();renderResults()}
+});
+$('addItem').onclick=()=>{S.menu.push({name:'',price:0,ing:0,pack:0});renderInputs()};
+$('addCh').onclick=()=>{if(S.ch.length<6){S.ch.push({name:'',rate:0});renderInputs()}};
+function loadSample(){S.csv=SAMPLE_CSV;S.source='sample';S.menu=SAMPLE_MENU.map(r=>({name:r[0],price:r[1],ing:r[2],pack:r[3]}));S.ch=SAMPLE_CH.map(r=>({name:r[0],rate:r[1]}));renderInputs();renderResults()}
+$('useSample').onclick=loadSample;
+function loadText(t,name){
+ const had=S.source=='sample';
+ S.csv=t;S.source=name||'your data';
+ if(had){S.menu=[];S.ch=[]}
+ const p=parseCSV(t);
+ if(!p.error){ /* seed menu and channels from the file so the owner only fills in numbers */
+  const mi=new Set(S.menu.map(m=>norm(m.name))), ci=new Set(S.ch.map(c=>norm(c.name)));
+  p.rows.forEach(r=>{const a=r.item.trim(),b=r.ch.trim();
+   if(a&&!mi.has(norm(a))&&S.menu.length<60){mi.add(norm(a));S.menu.push({name:a==a.toLowerCase()?a.replace(/\b\w/g,x=>x.toUpperCase()):a,price:0,ing:0,pack:0})}
+   if(b&&!ci.has(norm(b))&&S.ch.length<6){ci.add(norm(b));S.ch.push({name:b==b.toLowerCase()?b.replace(/\b\w/g,x=>x.toUpperCase()):b,rate:/dine|in.?store|pickup|pick-up|takeaway/i.test(b)?0:30})}});
+ }
+ renderInputs();renderResults();
+}
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadText(String(r.result),f.name);r.readAsText(f);e.target.value=''};
+$('runPaste').onclick=()=>{const t=$('paste').value;if(t.trim())loadText(t,'pasted data')};
+
+/* ---------- results ---------- */
+function renderResults(){
+ const M=compute(), st=$('status'), R=$('results');
+ $('srctag').textContent=S.source=='sample'?'SAMPLE CAFÉ · SYNTHETIC DATA':('YOUR DATA · '+String(S.source).toUpperCase());
+ $('rejects').innerHTML='';
+ if(M.error){st.className='status bad';st.textContent=M.error;R.innerHTML='';return}
+ const rj=M.rejects.length;
+ st.className='status'+(M.n==0?' bad':'');
+ st.textContent=M.n==0?`No usable sales found in ${M.total} rows. Check the menu and channel names below match your file.`:
+  `${M.n.toLocaleString()} of ${M.total.toLocaleString()} rows used, covering ${dayStr(M.weeks[0].ws)} onward for ${M.days} days.`+(rj?` ${rj} skipped.`:'');
+ if(rj){
+  let h='<details open style="margin-top:4px"><summary>'+rj+' rows skipped, with reasons</summary><div class="stack" style="margin-top:10px">';
+  if(M.unkItems.length) h+='<div class="row"><span class="note">Items not in your menu:</span>'+M.unkItems.slice(0,8).map(x=>`<button data-add-item="${esc(x)}">+ ${esc(x)}</button>`).join('')+'</div>';
+  if(M.unkCh.length) h+='<div class="row"><span class="note">Channels not in your list:</span>'+M.unkCh.slice(0,6).map(x=>`<button data-add-ch="${esc(x)}">+ ${esc(x)}</button>`).join('')+'</div>';
+  h+='<div class="tablewrap"><table style="min-width:420px"><tr><th>Row</th><th>Content</th><th>Reason</th></tr>'+M.rejects.slice(0,15).map(r=>`<tr><td class="mono">${r.line}</td><td>${esc(r.raw)}</td><td>${esc(r.why)}</td></tr>`).join('')+'</table></div>'+(rj>15?`<p class="note">Showing the first 15 of ${rj}.</p>`:'')+'</div></details>';
+  $('rejects').innerHTML=h;
+ }
+ if(M.n==0){R.innerHTML='';return}
+ if(M.rev<=0){R.innerHTML='<div class="status bad">Every menu price is $0, so there is nothing to calculate yet. Enter your dine-in prices, ingredient costs and commission rates above.</div>';return}
+ const zeroPrice=S.menu.filter(m=>m.name.trim()&&m.price<=0).length;
+ const all=recs(M,S.oh,S.tm), total=all.reduce((s,r)=>s+r.imp,0);
+ const c={KEEP:0,REPRICE:0,PULL:0}; all.forEach(r=>c[r.act]++);
+ const w=M.weeks, hasTrend=w.length>=2&&M.drev>0, share=x=>x.drev/x.rev*100, marg=x=>x.np/x.rev*100;
+ const totNP=M.agg.reduce((s,a)=>s+a.np,0);
+ let h='';
+ if(zeroPrice) h+=`<div class="status bad">${zeroPrice} menu item${zeroPrice>1?'s have':' has'} a price of $0. Enter prices above or the figures will be wrong.</div>`;
+ h+='<div class="verdict">';
+ h+=M.drev>0?`<div class="v"><span class="k">Taken by delivery apps</span><span class="n">${money(M.fees)}</span><span class="d">commission and packaging on ${money(M.drev)} of delivery sales (${(M.fees/M.drev*100).toFixed(0)}%)</span></div>`:`<div class="v"><span class="k">Delivery</span><span class="n">none</span><span class="d">No channel with a commission above 0% has sales. Set commission rates above.</span></div>`;
+ if(hasTrend){const lo=w.reduce((a,b)=>marg(a)<marg(b)?a:b), hiS=Math.max(...w.map(share));
+  h+=`<div class="v"><span class="k">Blended margin</span><span class="n">${marg(w[0]).toFixed(1)}% → ${marg(w[w.length-1]).toFixed(1)}%</span><span class="d">low of ${marg(lo).toFixed(1)}% in the week of ${dayLbl(lo.ws)}, as delivery reached ${hiS.toFixed(1)}% of revenue</span></div>`}
+ else h+=`<div class="v"><span class="k">Blended margin</span><span class="n">${(totNP/M.rev*100).toFixed(1)}%</span><span class="d">profit after ingredients, commission and packaging, before overhead</span></div>`;
+ h+=`<div class="v hi"><span class="k">Recoverable per month</span><span class="n" id="vtot">${money(total)}</span><span class="d">by repricing or pulling items in the table below, at the overhead set there</span></div></div>`;
+ if(hasTrend){
+  h+=`<section><h2>Did delivery growth cost margin?</h2><p class="lede">Weekly delivery share of revenue against the share of each sale the café keeps.</p><div class="card"><div class="legend"><span><i style="background:var(--c2)"></i>Delivery share of revenue</span><span><i style="background:var(--c1)"></i>Blended margin (after ingredients, commission, packaging)</span></div><div id="c1"></div><details style="margin-top:8px"><summary>Show as table</summary><div class="tablewrap"><table style="min-width:0"><tr><th>Week starting</th><th class="num">Delivery share</th><th class="num">Blended margin</th></tr>${w.map(x=>`<tr><td class="mono">${dayStr(x.ws)}</td><td class="num mono">${share(x).toFixed(1)}%</td><td class="num mono">${marg(x).toFixed(1)}%</td></tr>`).join('')}</table></div></details></div></section>`;
+ }
+ h+=`<section><h2>Margin by item and channel</h2><p class="lede">Each row is one menu item. Each dot is the margin it earns on one channel, before overhead.</p><div class="card"><div class="legend">${S.ch.map((x,i)=>x.name.trim()?`<span><i style="background:var(${CVAR[i%6]})"></i>${esc(x.name)}</span>`:'').join('')}</div><div id="c2"></div></div></section>`;
+ const worst=all[0];
+ h+=`<section><h2>What to do about it</h2><p class="lede">${worst?`The weakest line is <b>${esc(worst.item)}</b> on <b>${esc(worst.channel)}</b>, which keeps ${worst.marg.toFixed(1)}% after commission, packaging and overhead. `:''}Overhead (labour, rent) is an assumption, so adjust it and the verdicts recalculate.</p><div class="card stack"><div class="controls"><div class="ctl"><label for="oh">Overhead as share of revenue <output id="ohv">${S.oh}%</output></label><input id="oh" type="range" min="10" max="40" step="1" value="${S.oh}"></div><div class="ctl"><label for="tm">Target margin after overhead <output id="tmv">${S.tm}%</output></label><input id="tm" type="range" min="5" max="20" step="1" value="${S.tm}"></div></div><div id="tbl"></div></div></section>`;
+ R.innerHTML=h;
+ if(hasTrend) chart1(w,share,marg);
+ chart2(M);
+ $('oh').oninput=e=>{S.oh=+e.target.value;$('ohv').textContent=S.oh+'%';renderTable(M)};
+ $('tm').oninput=e=>{S.tm=+e.target.value;$('tmv').textContent=S.tm+'%';renderTable(M)};
+ renderTable(M);
+}
+const ICON={KEEP:'✓',REPRICE:'↑',PULL:'✕'};
+function renderTable(M){
+ const all=recs(M,S.oh,S.tm), total=all.reduce((s,r)=>s+r.imp,0), c={KEEP:0,REPRICE:0,PULL:0}; all.forEach(r=>c[r.act]++);
+ if($('vtot')) $('vtot').textContent=money(total);
+ if(!all.length){$('tbl').innerHTML='<p class="note">No delivery sales to evaluate. Give at least one channel a commission above 0%.</p>';return}
+ const rows=all.filter(r=>S.filter=='ALL'||r.act==S.filter);
+ $('tbl').innerHTML=`<div class="total"><span class="note">Recoverable per month</span><b class="mono">${money(total)}</b><span class="note">${c.PULL} pull, ${c.REPRICE} reprice, ${c.KEEP} keep</span></div>
+ <div class="filters" style="margin-top:12px">${['ALL','PULL','REPRICE','KEEP'].map(f=>`<button data-f="${f}" aria-pressed="${S.filter==f}">${f==='ALL'?'All '+all.length:f+' '+c[f]}</button>`).join('')}<button id="copyAct">Copy action list</button></div>
+ <div class="tablewrap" style="margin-top:12px"><table><tr><th>Item</th><th>Channel</th><th class="num">Units</th><th class="num">Margin after overhead</th><th>Action</th><th class="num">Price now</th><th class="num">Suggested</th><th class="num">Per month</th></tr>`+
+ rows.map(r=>`<tr><td>${esc(r.item)}</td><td>${esc(r.channel)}</td><td class="num mono">${r.units}</td><td class="num mono">${r.marg.toFixed(1)}%</td><td><span class="pill ${r.act}">${ICON[r.act]} ${r.act}</span></td><td class="num mono">${r.act=='KEEP'?'':money(r.price,2)}</td><td class="num mono">${r.act=='REPRICE'&&isFinite(r.sug)?money(Math.min(r.sug,r.price*1.25),2):''}</td><td class="num mono">${r.act=='KEEP'?'':money(r.imp,0)}</td></tr>`).join('')+
+ `</table></div><p class="note" style="margin-top:12px">Rule: KEEP if margin after overhead meets the target. REPRICE if a delivery price up to 25% above the dine-in price restores it (suggested price is capped at +25%). Otherwise PULL if the line loses money after overhead. Assumes the same unit volume after a price change. Per-month figures scale the data period to 30 days.</p>`;
+ $('tbl').querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;renderTable(M)});
+ $('copyAct').onclick=()=>{
+  const t=`MarginIQ actions (overhead ${S.oh}%, target margin ${S.tm}%)\n`+all.filter(r=>r.act!='KEEP').map(r=>`${r.act}: ${r.item} on ${r.channel}`+(r.act=='REPRICE'&&isFinite(r.sug)?` - raise to ${money(Math.min(r.sug,r.price*1.25),2)} (now ${money(r.price,2)})`:'')+` (about ${money(r.imp)}/month)`).join('\n')+`\nTotal: about ${money(total)}/month`;
+  const b=$('copyAct'); const done=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy action list',1500)};
+  try{navigator.clipboard.writeText(t).then(done,()=>{b.textContent='Copy blocked'})}catch(_){b.textContent='Copy blocked'}
+ };
+}
+
+/* ---------- charts ---------- */
+function chart1(w,share,marg){
+ const W=860,H=300,m={l:44,r:130,t:14,b:30}, vals=w.flatMap(x=>[share(x),marg(x)]);
+ const lo=Math.max(0,Math.floor((Math.min(...vals)-5)/10)*10), hi=Math.ceil((Math.max(...vals)+5)/10)*10;
+ const x=i=>m.l+i*(W-m.l-m.r)/(w.length-1), y=v=>m.t+(hi-v)*(H-m.t-m.b)/(hi-lo);
+ let g='';
+ for(let v=lo;v<=hi;v+=10) g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--grid')}"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end">${v}%</text>`;
+ const step=Math.ceil(w.length/7);
+ w.forEach((r,i)=>{if(i%step==0||i==w.length-1) g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${dayLbl(r.ws)}</text>`});
+ const line=(f,col)=>{const pts=w.map((r,i)=>[x(i),y(f(r))]),d=pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(''),base=y(lo);
+  return `<path d="${d}L${pts[pts.length-1][0]} ${base}L${pts[0][0]} ${base}Z" fill="${col}" opacity=".08"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${col}" stroke="${css('--surface')}" stroke-width="2"/>`).join('')};
+ g+=line(share,css('--c2'))+line(marg,css('--c1'));
+ const L=w.length-1; let ya=y(marg(w[L]))+4, yb=y(share(w[L]))+4; if(Math.abs(ya-yb)<14){if(ya<yb)ya-=7,yb+=7;else ya+=7,yb-=7}
+ g+=`<text class="lab" x="${x(L)+12}" y="${ya}">margin ${marg(w[L]).toFixed(1)}%</text><text class="lab" x="${x(L)+12}" y="${yb}">delivery ${share(w[L]).toFixed(1)}%</text>`;
+ g+=w.map((r,i)=>`<rect x="${x(i)-Math.min(30,(W-m.l-m.r)/(w.length-1)/2)}" y="${m.t}" width="${Math.min(60,(W-m.l-m.r)/(w.length-1))}" height="${H-m.t-m.b}" fill="transparent" data-i="${i}"/>`).join('');
+ $('c1').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of weekly delivery share and blended margin">${g}</svg>`;
+ $('c1').querySelectorAll('rect').forEach(r=>{r.onmousemove=e=>{const q=w[+r.dataset.i];showTip(e,`week of ${dayLbl(q.ws)}<br>delivery share ${share(q).toFixed(1)}%<br>blended margin ${marg(q).toFixed(1)}%`)};r.onmouseleave=hideTip});
+}
+function chart2(M){
+ M={...M,agg:M.agg.filter(a=>a.rev>0)};
+ const items=[...new Set(M.agg.map(a=>a.item))];
+ if(!items.length){$('c2').innerHTML='';return}
+ const mg=a=>a.np/a.rev*100, best=n=>Math.max(...M.agg.filter(a=>a.item==n).map(mg));
+ items.sort((a,b)=>best(b)-best(a));
+ const all=M.agg.map(mg), lo=Math.floor(Math.min(...all,0)/10)*10, hi=Math.max(lo+10,Math.ceil(Math.max(...all)/10)*10);
+ const W=860,rowH=44,m={l:180,r:30,t:16,b:30},H=m.t+m.b+items.length*rowH, x=v=>m.l+(v-lo)*(W-m.l-m.r)/(hi-lo);
+ let g='';
+ for(let v=lo;v<=hi;v+=10) g+=`<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H-m.b}" stroke="${css('--grid')}"/><text x="${x(v)}" y="${H-10}" text-anchor="middle">${v}%</text>`;
+ if(lo<0) g+=`<line x1="${x(0)}" x2="${x(0)}" y1="${m.t}" y2="${H-m.b}" stroke="${css('--axis')}" stroke-width="1.5"/>`;
+ items.forEach((n,i)=>{
+  const cy=m.t+i*rowH+rowH/2, rs=M.agg.filter(a=>a.item==n), vs=rs.map(mg);
+  g+=`<text class="lab" x="${m.l-14}" y="${cy+4}" text-anchor="end" style="font-family:var(--body);font-size:13px">${esc(n.length>24?n.slice(0,23)+'…':n)}</text><line x1="${x(Math.min(...vs))}" x2="${x(Math.max(...vs))}" y1="${cy}" y2="${cy}" stroke="${css('--axis')}" stroke-width="2"/>`;
+  rs.forEach(a=>{g+=`<circle cx="${x(mg(a))}" cy="${cy}" r="7" fill="${css(CVAR[a.cidx%6])}" stroke="${css('--surface')}" stroke-width="2" data-t="${esc(n)} on ${esc(a.channel)}<br>margin ${mg(a).toFixed(1)}%<br>${a.units} units, ${money(a.rev)} revenue"/>`});
+  const mn=Math.min(...vs), mx=Math.max(...vs);
+  g+=`<text class="lab" x="${x(mn)}" y="${cy-13}" text-anchor="middle">${mn.toFixed(1)}%</text>`+(rs.length>1?`<text class="lab" x="${x(mx)}" y="${cy-13}" text-anchor="middle">${mx.toFixed(1)}%</text>`:'');
+ });
+ $('c2').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Dot plot of margin by item and channel">${g}</svg>`;
+ $('c2').querySelectorAll('circle').forEach(c=>{c.onmousemove=e=>showTip(e,c.dataset.t);c.onmouseleave=hideTip});
+}
+loadSample();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',renderResults);
+new MutationObserver(renderResults).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
